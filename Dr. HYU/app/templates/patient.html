@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- 카카오 맵 띄우는 html -->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ae01a11268ffab74a2b330854a900671"></script>
+  <!-- <script src="/static/index.js" type="text/javascript"></script> -->
+  <script src="https://code.jquery.com/jquery-3.4.1.js"
+        integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
+  <script>
+    $(document).ready(function () {
+      var container = $("#map").get(0)
+      var options = { 
+        center: new kakao.maps.LatLng(37.5585146, 127.0331892), 
+        level: 4
+      };
+      var map = new kakao.maps.Map(container, options);
+
+      // 마커 표시
+      var marker = new kakao.maps.Marker({ 
+          position: map.getCenter() 
+      }); 
+      marker.setMap(map);
+
+      // 마우스 드래그로 지도 이동이 완료되었을 때 마지막 파라미터로 넘어온 함수를 호출하도록 이벤트를 등록합니다
+      kakao.maps.event.addListener(map, 'dragend', function() {          
+        var latlng = map.getCenter(); 
+      });
+
+
+      // 마커에 나타낼 내용(병원, 상점 정보들)
+      var iwContent = '<div style="padding:5px;">Hello World!</div>'; 
+      var infowindow = new kakao.maps.InfoWindow({
+          content : iwContent
+      });
+      kakao.maps.event.addListener(marker, 'mouseover', function() {
+          infowindow.open(map, marker);
+      });
+      kakao.maps.event.addListener(marker, 'mouseout', function() {
+          infowindow.close();
+      });
+
+      // 마커에 클릭이벤트를 등록합니다
+      kakao.maps.event.addListener(marker, 'click', function() {
+        // 자주가는 병원등록 하기
+        // 예약하기
+        // 처방전 확인
+      });
+
+      
+      // 검색 버튼 클릭시 입력한 정보를 바탕으로
+      // db에서 자료를 가져와 ajax로 출력
+      /*
+      $("#privacy-info").submit((e) => {
+        e.preventDefault()
+        console.log("개인정보출력")
+        $.ajax({
+            url: "/ajax",
+            cache: false,
+            contentType: "application/json",
+            success: res => {
+                var r1= $('<input id="prefer" type="submit" value="즐겨찾기 추가""/>');
+                var r2= $('<input id="reservation" type="submit" value="예약하기"/>');
+                var r3= $('<input id="prescription" type="submit" value="처방전 열람"/>');
+                $("body").append(r1);
+                $("body").append(r2);
+                $("body").append(r3);
+            }
+        })
+      })  
+      $("#search-hospital").click(() => {
+        console.log("병원")
+      })
+
+      $("body").on("click","prefer", function(){
+        console.log("즐찾")
+      });
+      */
+
+      // add_Marker(0, map);
+      // function add_Marker(marker_Info, map){  
+      //   var imageSrc = "http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png";     
+      //   for (var i = 0; i < positions.length; i ++) {
+      //       var imageSize = new kakao.maps.Size(24, 35); 
+      //       var markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize); 
+            
+      //       // 마커를 생성합니다
+      //       position = new kakao.maps.LatLng(marker_Info['lat'], marker_Info['lng'])
+      //       var marker = new kakao.maps.Marker({
+      //           map: map, 
+      //           position: position, 
+      //           title : marker_Info['name'], 
+      //           image : markerImage 
+      //       });
+      //   }
+      // } 
+    })
+</script>
+</head>
+<body>
+  <h1>주변 병원, 약국, 상점 찾기</h1>
+  <div>
+    <form id="privacy-info">
+      <button type="submit">개인정보</button>
+      <button id="search-hospital" type="button">병원 검색</button>
+      <button id="search-pharmacy" type="button">약국 검색</button>
+      <button id="search-optician" type="button">안경원 검색</button>
+    </form>
+  </div>
+  <div id="map" style="width:500px;height:400px;"></div>
+  
+  <button id="prefer" type="button">즐겨찾기 추가</button></br>
+  <input id="reservated-name"/>
+  <button id="reservation" type="button">병원예약</button></br>
+  <button id="description" type="button">처방전 열람</button>
+</body>
+</html>

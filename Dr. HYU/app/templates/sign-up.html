@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>
+            Sign-up
+        </title>
+        <script src="https://code.jquery.com/jquery-3.4.1.js"
+                integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous">
+        </script>
+        <script>
+            $(document).ready(function () {
+            // 검색 버튼 클릭시 입력한 정보를 바탕으로
+            // db에서 자료를 가져와 ajax로 출력
+                $("#sign-up-Info").submit((e) => {
+                    e.preventDefault()
+                    let formData = {
+                        "email": e.target.email.value,
+                        "password": e.target.password.value,
+                        "name": e.target.name.value,
+                        "phone_number": e.target.phone_number.value,
+                        "type": e.target.type.value
+                    }
+                    $.ajax({
+                        type: "POST",
+                        url: "/add-customer",
+                        cache: false,
+                        data: JSON.stringify(formData),
+                        contentType: "application/json",
+                        success: res => {
+                            if(res == "가입성공") {
+                                alert("회원가입완료 뒤로가기를 눌러주세요")
+                                // 버튼은 만들어지는데 action이 불가능
+                                var r= $('<input type="submit" value="로그인 하기""/>');
+                                // $("body").append(r);
+                            } else{
+                                alert("회원가입실패(존재하는 email)")
+                                // 존재하는 회원이면 type변경 선택
+                            }
+                        }
+                    })
+                })
+            })
+        </script>
+        <script> 
+            function check(){
+                // 비밀번호 두개 똑같고
+                // 빈칸 ㄴㄴ
+            }
+        </script>
+        
+    </head>
+    <body>
+        <h1>회원가입</h1>
+        <form id="sign-up-Info"> 
+            <input type="email" name="email" placeholder="email"/></br>
+            <input id="password" type="password" name="password" placeholder="password"/></br>
+            <!-- <input id="password2" type="password" name="password" placeholder="one more password"/></br> -->
+            <input type="text" name="name" placeholder="name"/></br>
+            <input type="text" name="phone_number" placeholder="phone_number"/></br>
+            <input type="text" name="type" placeholder="type"/></br>
+            <button type="submit">가입완료</button>   
+            
+        </form>
+    </body>
+</html>
