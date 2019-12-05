@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- 카카오 맵 띄우는 html -->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ae01a11268ffab74a2b330854a900671"></script>
+  <!-- <script src="/static/index.js" type="text/javascript"></script> -->
+  <script src="https://code.jquery.com/jquery-3.4.1.js"
+        integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
+  <script>
+    $(document).ready(function () {
+      var container = $("#map").get(0)
+      var options = { 
+        center: new kakao.maps.LatLng(37.5585146, 127.0331892), 
+        level: 7
+      };
+      var map = new kakao.maps.Map(container, options);
+
+      // 마커 표시
+      var marker = new kakao.maps.Marker({ 
+          position: map.getCenter() 
+      }); 
+      marker.setMap()
+
+      // 마우스 드래그로 지도 이동이 완료되었을 때 마지막 파라미터로 넘어온 함수를 호출하도록 이벤트를 등록합니다
+      kakao.maps.event.addListener(map, 'dragend', function() {   
+          var latlng = map.getCenter(); 
+          var marker = new kakao.maps.Marker({ 
+              position: map.getCenter() 
+          }); 
+          marker.setMap(map)
+          marker.setMap(null)    
+          
+      });
+
+      // 현 위치를 중심으로 병원 마커 추가    
+      $("#search-hospital").click((e) => {
+        console.log("병원검색")
+        center = map.getCenter()
+        let position = {
+          "lat": center['Ga'],
+          "lng": center['Ha']
+        }
+        console.log(position)
+        $.ajax({
+            type: "POST",
+            url: "/hospital_list",
+            data: JSON.stringify(position),
+            cache: false,
+            contentType: "application/json",
+            success: res => {
+              if (res == -1) return -1;
+              hosp_list = JSON.parse(res)
+
+              console.log(hosp_list)
+              var okimage = "http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png"; 
+              var noimage = "http://i1.daumcdn.net/dmaps/apis/n_local_blit_04.png"
+              
+              // 기존 마커 우째 지우노
+
+
+
+
+              // 마커를 생성 & 마커 정보 기입
+              for (var i = 0; i < hosp_list.length; i ++) {
+                  latlng = new kakao.maps.LatLng(hosp_list[i][3], hosp_list[i][4])
+                  hosp = hosp_list[i]
+                  contents = ""
+                  contents += "이름: "+hosp[1]+"\n"
+                  contents += "주소: "+hosp[2]+"\n"
+                  contents += "거리: "+(Number(hosp[5])/1000).toFixed(1)+"km"+"\n"
+                  contents += "평일진료시간: "+hosp[6]+"~"+hosp[7]+"\n"
+                  contents += "주말진료시간: "+hosp[8]+"~"+hosp[9]+"\n"
+                  contents += "전문의 수: "+hosp[10]+"\n"
+                  contents += "진료과목: "+hosp[11]+"\n"
+                  // 진료시간에 따른 마커이미지
+                  var date = new Date()
+                  day = date.getDay()
+                  hour = date.getHours()
+                  openTime = 0
+                  closeTime = 0
+                  if(day >= 1 && day <= 5){
+                    openTime = hosp[6] 
+                    closeTime = hosp[7]
+                  } else {
+                    openTime = hosp[8]
+                    closeTime = hosp[9]
+                  }
+                  var imageSize = new kakao.maps.Size(24, 35); 
+                  var markerImage;
+                  if (hour >= openTime && hour <= closeTime){
+                    markerImage = new kakao.maps.MarkerImage(okimage, imageSize);
+                    console.log("open")
+                  } else{
+                    markerImage = new kakao.maps.MarkerImage(noimage, imageSize);
+                  }
+                  // 마커 옵션 설정
+                  var marker = new kakao.maps.Marker({
+                      map: map, // 마커를 표시할 지도
+                      position: latlng, // 마커를 표시할 위치
+                      title: contents, // 마커의 타이틀, 마커에 마우스를 올리면 타이틀이 표시됩니다
+                      image: markerImage // 마커 이미지 
+                  });
+              }
+            }
+        })
+      })
+
+      $("#search-pharmacy").click((e) => {
+        // 마커 표시
+        console.log("약국검색")
+        var marker = new kakao.maps.Marker({ 
+            position: map.getCenter() 
+        }); 
+        marker.setMap(map);
+      })
+
+      $("#privacy-info").click((e) => {
+        e.preventDefault()
+        console.log("개인정보출력")
+        var cookies = document.cookie.split(";");
+        cookie = cookies[2]
+        cookie = cookie.substring(1)
+        tmp = cookie.split('@')
+        local = tmp[0]
+        tmp = tmp[1].split('\n')
+        domain = tmp[0]
+        console.log(local)
+        console.log(domain)
+        let email = {
+          'local': local,
+          'domain': domain
+        }
+        $.ajax({
+            type: "POST",
+            url: "/patient-privacy-info",
+            cache: false,
+            data: JSON.stringify(email),
+            contentType: "application/json",
+            success: res => {
+              records = JSON.parse(res)
+              let tBodyHtml = ''
+              console.log(records)
+              for(let row of records){
+                  tBodyHtml += `<tr>
+                      <td>${row[0]}</td>
+                      <td>${row[1]}</td>
+                  </tr>`
+              }
+              $('table tbody').html(tBodyHtml)
+            }
+        })
+      })
+
+      $("#favorite").click((e) => {
+        console.log("즐찾")
+        e.preventDefault()
+        var cookies = document.cookie.split(";");
+        cookie = cookies[2]
+        cookie = cookie.substring(1)
+        tmp = cookie.split('@')
+        local = tmp[0]
+        tmp = tmp[1].split('\n')
+        domain = tmp[0]
+        // console.log(e.hospital_name)
+        // console.log(e.target.hospital_name)
+        let formData = {
+            "hospital_name": e.target.hospital_name.value, //??ㅅㅂ왜안돼
+            "local": local,
+            "domain": domain
+        }
+        $.ajax({
+            type: "POST",
+            url: "/add_favorite",
+            cache: false,
+            data: JSON.stringify(formData),
+            contentType: "application/json",
+            success: res => {
+                console.log("favorite added")
+            }
+        })
+      });
+    })
+  </script>
+</head>
+<body>
+  <h1>주변 병원, 약국, 상점 찾기</h1>
+  <div>
+    <button id="search-hospital">병원 검색</button>
+    <button id="search-pharmacy">약국 검색</button>
+    <button id="search-optician">안경원 검색</button>
+  </div>
+  <div id="map" style="width:500px;height:400px;"></div>
+  <button id="privacy-info">최근 방문한 병원</button>
+  <form id="favorite">
+      <input type="text" name="hospital_name" placeholder="Hospital Name"/>
+      <button type="submit">자주가는 병원등록</button>
+  </form>
+  <form id="reservation"'>
+    <input type="text" name="hospital_name" placeholder="Hospital Name"/>
+    <input type="text" name="time" placeholder="YYMMDDHH"/>
+    <button type="submit">예약하기</button>
+  </form>
+  <button id="description" type="button">처방전 열람</button>
+  <h3>최근방문한 병원</h3>
+        <table id="recent-visited">
+            <thead>
+                <tr>
+                    <th>이름</th>
+                    <th>날짜</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+  <h3>자주가는 병원</h3>
+        
+</body>
+</html>

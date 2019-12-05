@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>
+            PhoneBook
+        </title>
+    </head>
+    <body>             
+        <h1>검색 결과</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>
+                이름
+              </th>
+              <th>
+                전화번호
+              </th>
+              <th>
+                같은 성의 수
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for info in phoneBook %}
+              <tr>
+                <td>
+                  {{ info['name'] }}
+                </td>
+                <td>
+                  {{ info['number'] }}
+                </td>
+                <td>
+                  &emsp;&emsp;
+                  {{ info['count'] }}
+                </td>
+              </tr>
+            {% endfor %}            
+          </tbody>
+        </table>
+    </body>
+</html>

@@ -5,6 +5,7 @@ import json
 import requests
 from apicall import hosp_list
 from pprint import pprint
+from datetime import datetime
 
 pg_local = {
     'host': "localhost", # localhost
@@ -147,19 +148,22 @@ def init_hospInfo_table():
         return -1
     return 1;
 
-# <환자 시스템 Table>
-# 병원(이름, 위도, 경도, 시각(최근 간 병원), check(자주 간 병원 등록 유무))
-def create_privacyInfo_table():
+# 약국 정보 테이블
+# 이름(name), 주소(addr), 위도(XPos), 경도(YPos), 거리(distance)
+def create_hospInfo_table():
     sql = f'''CREATE TABLE hosp_Info (
                 id SERIAL NOT NULL,
-                name varchar(20) NOT NULL,
+                name varchar(100) NOT NULL PRIMARY KEY,
                 addr varchar(100) NOT NULL,
                 lat double precision NOT NULL,
                 lng double precision NOT NULL,
+                distance double precision NOT NULL,
                 weekday_open integer NOT NULL,
                 weekday_close integer NOT NULL,
                 weekend_open integer NOT NULL,
                 weekend_close integer NOT NULL,
+                doctor_cnt integer NOT NULL,
+                diagnosis_kinds varchar(100) NOT NULL
             );
     '''
     try:
@@ -172,9 +176,110 @@ def create_privacyInfo_table():
     except pg.OperationalError as e:
         print(e)
 
+# 약국 정보 Table
+def init_hospInfo_table():
+    json = hosp_list()
+    hosp = json['response']['body']['items']['item']
+    
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor()         
+        for data in hosp: 
+            # print(data)
+            name = data['yadmNm']
+            addr = data['addr']
+            lng = data['XPos']
+            lat = data['YPos']
+            weekday_open = 8
+            weekday_close = 19
+            weekend_open = 13
+            weekend_close = 17
+            distance = data['distance']
+            doctor_cnt = data['sdrCnt']
+            diagnosis_kinds = "종합과목 진료(한방, 치과제외)"
+            sql = f'''INSERT INTO hosp_Info(name, addr, lat, lng, distance, weekday_open, weekday_close, 
+                                                weekend_open, weekend_close, doctor_cnt, diagnosis_kinds)
+                        VALUES (\'{name}\', \'{addr}\', \'{lat}\', \'{lng}\', \'{distance}\'
+                                    , \'{weekday_open}\', \'{weekday_close}\', \'{weekend_open}\'
+                                        , \'{weekend_close}\', \'{doctor_cnt}\', \'{diagnosis_kinds}\');
+            '''
+            print(sql)
+            cur.execute(sql)
+        conn.commit()
+        conn.close()
+        # print(sql)
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+    return 1;
+
+# 환자 방문 기록
+def create_visited_record_table():
+    sql = f'''CREATE TABLE visited_record (
+                id SERIAL NOT NULL,
+                hospital_name varchar(20) NOT NULL,
+                time varchar(100) NOT NULL,
+                local varchar(20) NOT NULL,
+                domain varchar(20) NOT NULL
+            );
+    '''
+    try:
+        conn = pg.connect(connect_string) # DB연결(로그인)
+        cur = conn.cursor() # DB 작업할 지시자 정하기
+        print(sql)
+        cur.execute(sql) # sql 문을 실행
+        conn.commit()
+        conn.close()
+    except pg.OperationalError as e:
+        print(e)
+        
+# 방문 기록 추가
+def add_visited_record():
+    hospital_name = "서울성심병원"
+    time = "2019-07-15"
+    local = "tfalkc"
+    domain = "smh.com.au"
+    sql = f'''INSERT INTO visited_record(hospital_name, time, local, domain)
+                      VALUES (\'{hospital_name}\', \'{time}\', \'{local}\', \'{domain}\');
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(sql)
+        print(sql)
+        conn.commit()
+        conn.close()
+        return 1
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+# 환자의 즐겨찾는 병원 목록
+def create_favorite_hospital_table():
+    sql = f'''CREATE TABLE favorite_hospital (
+                id SERIAL NOT NULL,
+                hospital_name varchar(20) NOT NULL,
+                local varchar(20) NOT NULL,
+                domain varchar(20) NOT NULL
+            );
+    '''
+    try:
+        conn = pg.connect(connect_string) # DB연결(로그인)
+        cur = conn.cursor() # DB 작업할 지시자 정하기
+        print(sql)
+        cur.execute(sql) # sql 문을 실행
+        conn.commit()
+        conn.close()
+    except pg.OperationalError as e:
+        print(e)
+# 환자 처방 기록(환자, 병원이름, 처방내용...)
+# 즐겨찾는 병원 목록(환자, 병원이름)
 if __name__ == "__main__":
     # create_customersInfo_table()
     # init_customersInfo_table()
-    create_hospInfo_table()
-    init_hospInfo_table()
+    # create_hospInfo_table()
+    # init_hospInfo_table()
+    # create_visited_record_table()
+    # add_visited_record()
+    create_favorite_hospital_table()
 
