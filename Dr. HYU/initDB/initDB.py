@@ -37,7 +37,7 @@ def create_customersInfo_table():
                 local varchar(20) NOT NULL,
                 domain varchar(20) NOT NULL,
                 password varchar(20) NOT NULL,
-                type varchar(20) DEFAULT 'no Type'
+                type varchar(20) DEFAULT 'patient'
             );
     '''
     try:
@@ -149,9 +149,9 @@ def init_hospInfo_table():
     return 1;
 
 # 약국 정보 테이블
-# 이름(name), 주소(addr), 위도(XPos), 경도(YPos), 거리(distance)
-def create_hospInfo_table():
-    sql = f'''CREATE TABLE hosp_Info (
+# 이름(name), 주소(addr), 위도(XPos), 경도(YPos), 거리(distance), 오픈시간, 처방가능여부
+def create_pharmInfo_table():
+    sql = f'''CREATE TABLE pharm_Info (
                 id SERIAL NOT NULL,
                 name varchar(100) NOT NULL PRIMARY KEY,
                 addr varchar(100) NOT NULL,
@@ -162,8 +162,7 @@ def create_hospInfo_table():
                 weekday_close integer NOT NULL,
                 weekend_open integer NOT NULL,
                 weekend_close integer NOT NULL,
-                doctor_cnt integer NOT NULL,
-                diagnosis_kinds varchar(100) NOT NULL
+                prescribe_possible varchar(100) NOT NULL
             );
     '''
     try:
@@ -254,7 +253,7 @@ def add_visited_record():
         print(e)
         return -1
 
-# 환자의 즐겨찾는 병원 목록
+# 즐겨찾는 병원 목록
 def create_favorite_hospital_table():
     sql = f'''CREATE TABLE favorite_hospital (
                 id SERIAL NOT NULL,
@@ -272,14 +271,72 @@ def create_favorite_hospital_table():
         conn.close()
     except pg.OperationalError as e:
         print(e)
-# 환자 처방 기록(환자, 병원이름, 처방내용...)
-# 즐겨찾는 병원 목록(환자, 병원이름)
+
+# 예약 내역
+def create_reservation_list_table():
+    sql = f'''CREATE TABLE reservation_list (
+                id SERIAL NOT NULL,
+                name varchar(20) NOT NULL,
+                phone_number integer NOT NULL,
+                date varchar(20) NOT NULL,
+                institution_name varchar(20) NOT NULL
+            );
+    '''
+    try:
+        conn = pg.connect(connect_string) # DB연결(로그인)
+        cur = conn.cursor() # DB 작업할 지시자 정하기
+        print(sql)
+        cur.execute(sql) # sql 문을 실행
+        conn.commit()
+        conn.close()
+    except pg.OperationalError as e:
+        print(e)
+
+
+# 발급 년월일 번호
+# 환자 이름
+# 병원 이름
+# 처방의약품의 명칭, 1회투약량, 1일 투여횟수, 총투약일수
+# 조제 연월일
+# 병원 이름
+# 처방 변경-수정-확인 내용
+def create_prescription_list_table():
+    sql = f'''CREATE TABLE prescription_list (
+                id SERIAL NOT NULL,
+                local varchar(20) NOT NULL,
+                domain varchar(20) NOT NULL,
+                patient_name varchar(20) NOT NULL,
+                hospital_name varchar(100) NOT NULL,
+                hospital_date varchar(20) NOT NULL,
+                serial integer NOT NULL,
+                medicine_name varchar(20) NOT NULL,
+                dose_amount integer NOT NULL,         
+                dose_num integer NOT NULL,
+                dose_day integer NOT NULL,
+                pharmacy_date varchar(20),
+                pharmacy_name varchar(100),
+                pharamcy_opinion varchar(100)
+            );
+    '''
+    try:
+        conn = pg.connect(connect_string) # DB연결(로그인)
+        cur = conn.cursor() # DB 작업할 지시자 정하기
+        print(sql)
+        cur.execute(sql) # sql 문을 실행
+        conn.commit()
+        conn.close()
+    except pg.OperationalError as e:
+        print(e)
+        
 if __name__ == "__main__":
-    # create_customersInfo_table()
-    # init_customersInfo_table()
+    create_customersInfo_table()
+    init_customersInfo_table()
     # create_hospInfo_table()
     # init_hospInfo_table()
     # create_visited_record_table()
     # add_visited_record()
-    create_favorite_hospital_table()
+    # create_favorite_hospital_table()
+    # create_pharmInfo_table()
+    # create_prescription_list_table()
+    # create_reservation_list_table()
 

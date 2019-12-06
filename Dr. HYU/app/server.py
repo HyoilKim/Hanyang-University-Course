@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request
-from db import search_customerInfo, insert_customerInfo, set_type, get_hosp_list, visited_record, update_hospInfo_table
+from db import search_customerInfo, insert_customerInfo, set_type, get_hosp_list, visited_record
+from db import add_favorite_hospital, update_hospInfo_table, update_pharmInfo_table, get_pharm_list
+from db import get_favorite_hospital_list, add_reservation, get_hospital_name, get_reservation_list
 import json
 from pprint import pprint
 # from apicall import hosp_list, pharm_list
@@ -20,16 +22,16 @@ def sign_in():
     email = request.form.get('email')
     tmp = email.split('@')
     local = tmp[0]
-    tmp = tmp[1].split('\n')
-    domain = tmp[0]
+    print(tmp)
+    domain = tmp[1]
     password = request.form.get('password')
     res = search_customerInfo(local, domain, password)
     print(res)
     if res == []: return "회원정보가 없습니다. 회원가입을 해주세요."
-    if res[0][0] == "no Type": return render_template("set-type.html")
     if res[0][0] == "patient": return render_template("patient-main.html")
-    if res[0][0] == "hospital": return "hosp"
-    if res[0][0] == "pharmacy" : return "store"  
+    if res[0][0] == "hospital": return render_template("hospital-main.html")
+    if res[0][0] == "pharmacy" : return render_template("pharmacy-main.html")
+    return "error"
     #  res의 type종류에 따라 다른 화면 송출
     #  type이 없다면 설정
     #  login data가 없다면 alert  
@@ -38,23 +40,6 @@ def sign_in():
 @app.route('/sign-up')
 def sing_up():
     return render_template("sign-up.html")    
-    
-# type이 정해지지 않은 기존 고객들 type선택
-@app.route('/after-set-type', methods=["GET", "POST"])
-def after_set_type():
-    console.log("@")
-    email = request.form.get('email')
-    tmp = email.split('@')
-    local = tmp[0]
-    tmp = tmp[1].split('\n')
-    domain = tmp[0]
-    type = request.form.get('type')
-    if type=="patient" or type=="hospital" or type=="store":
-        set_type(local, domain, type)
-    else: 
-        return "잘못된 타입이 들어옴"
-    console.log("@")
-    return render_template("sign-in.html")
 
 # 입력받은 정보를 고객목록에 추가(회원가입)
 @app.route('/add-customer', methods=["GET", "POST"])
@@ -91,6 +76,16 @@ def hospital_list():
     list = get_hosp_list()
     return json.dumps(list)
 
+@app.route('/pharmacy_list', methods=["POST"])
+def pharmacy_list():
+    req = request.get_json()
+    lat = req["lat"]
+    lng = req["lng"]
+    res = update_pharmInfo_table(lat, lng)
+    if res == -1: return -1;
+    list = get_pharm_list()
+    return json.dumps(list)
+
 @app.route('/patient-privacy-info', methods=["POST"])
 def patient_privacy_info():
     email = request.get_json()
@@ -104,21 +99,31 @@ def add_favorite():
     name = req['hospital_name']
     local = req['local']
     domain = req['domain']
-    return add_favorite_hospital(name, local, domain)
+    add_favorite_hospital(name, local, domain)
+    return json.dumps(get_favorite_hospital_list(local, domain))
 
+@app.route('/add_reservation', methods=["POST"])
+def add_reservation_info():
+    name = request.form.get('name')
+    phone_number = request.form.get('phone_number')
+    date = request.form.get('date')
+    institution = request.form.get('institution_name')
+    add_reservation(name, phone_number, date, institution) 
+    return render_template("patient-main.html")
 
-@app.route('/reservation')
-def update_hospital():
-    print("update_hopital")
-    return "OK"    
+# 병원관리자가 예약 list를 보는 것
+@app.route('/reservation_list', methods=["POST"])
+def reservation_list():
+    req = request.get_json()
+    local = req['local']
+    domain = req['domain']
+    tmp = get_hospital_name(local, domain)
+    if(tmp == []):
+        print("xxxx")
+        return json.dumps(tmp)
+    institution_name = tmp[0][0]
+    return json.dumps(get_reservation_list(institution_name))
 
-@app.route('/description')
-def update_pharmacy():
-    print("update_pharmacy")
-    return "OK"
-
-
-            
 # Ensure responses aren't cached
 @app.after_request
 def after_request(response):

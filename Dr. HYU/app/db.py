@@ -2,8 +2,8 @@ import psycopg2 as pg
 import psycopg2.extras
 import json
 import requests
-# from apicall import hosp_list, test1
 from pprint import pprint
+import random
 # localhost == 127.0.0.1\
 pg_local = {
     'host': "localhost", # localhost
@@ -95,12 +95,9 @@ def insert_customerInfo(name, phone_number, local, domain, password, type):
         return -1
 
 # 병원 정보 Table
-def hosp_list(lat, lng):
+def hosp_list_api(lat, lng):
     lat = round(lat, 7)
     lng = round(lng, 7)
-    print("@@@@@@@@@@@@@@")
-    print(lat)
-    print(lng)
     url = "http://apis.data.go.kr/B551182/hospInfoService/getHospBasisList"
     default_key = "3wlHL6g1M3i2oO2cnR44opHmafh54ifadIuEPG/oNu09j7iaYXKYs87dgFRZDsxfSWwzzJoVgqRhKyLHUIl96A=="
     params = {
@@ -114,11 +111,10 @@ def hosp_list(lat, lng):
       '_type': 'json'               
       
     }
-    # pprint(params)
     r = requests.get(url, params=params)    # url에 parm정보추가
-    # pprint(r)
     return r.json()          
 
+# api로 불러온 자료 table에 저장
 def update_hospInfo_table(lng, lat):
     url = "http://apis.data.go.kr/B551182/hospInfoService/getHospBasisList"
     default_key = "3wlHL6g1M3i2oO2cnR44opHmafh54ifadIuEPG/oNu09j7iaYXKYs87dgFRZDsxfSWwzzJoVgqRhKyLHUIl96A=="
@@ -147,7 +143,7 @@ def update_hospInfo_table(lng, lat):
         conn = pg.connect(connect_string)
         cur = conn.cursor()  
         removeAll = f'''DELETE FROM hosp_Info '''
-        
+        cur.execute(removeAll)
         print(removeAll)     
         for data in hosp: 
             # print(data)
@@ -196,9 +192,128 @@ def get_hosp_list():
         print(e)
         return -1
       
-def get_hosp(name):
+def get_hospital_name(local, domain):
+    print("병원 관리자 id")
+    print(local)
+    print(domain)
     sql = f'''SELECT name
-              FROM hosp_Info
+              FROM customers_Info
+              WHERE local=\'{local}\' and domain=\'{domain}\' 
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor()
+        cur.execute(sql)
+        print(sql)
+        result = cur.fetchall() 
+        print(result)
+        conn.commit()
+        conn.close()
+        return result
+    except pg.OperationalError as e:
+        print(e)
+        return -1    
+
+# api로 부터 약국 불러오기
+def pharm_list_api(lat, lng):    
+    url = "http://apis.data.go.kr/B551182/pharmacyInfoService/getParmacyBasisList"
+    default_key = "3wlHL6g1M3i2oO2cnR44opHmafh54ifadIuEPG/oNu09j7iaYXKYs87dgFRZDsxfSWwzzJoVgqRhKyLHUIl96A=="
+    params = {
+        'pageNo': 1,
+        'numOfRows': 10,
+        'ServiceKey': default_key,
+        'xPos': lng, #127.0331892,
+        'yPos': lat, #37.5585146,
+        'radius': 5000,  
+        '_type': 'json'
+    }
+    r = requests.get(url, params=params)
+    return r.json()
+
+# 약국 테이블에 api자료로 업데이트
+def update_pharmInfo_table(lng, lat):
+    url = "http://apis.data.go.kr/B551182/pharmacyInfoService/getParmacyBasisList"
+    default_key = "3wlHL6g1M3i2oO2cnR44opHmafh54ifadIuEPG/oNu09j7iaYXKYs87dgFRZDsxfSWwzzJoVgqRhKyLHUIl96A=="
+    params = {
+        'pageNo': 1,
+        'numOfRows': 10,
+        'ServiceKey': default_key,
+        'xPos': lng, #127.0331892,
+        'yPos': lat, #37.5585146,
+        'radius': 5000,  
+        '_type': 'json'
+    }
+    pprint(params)
+    r = requests.get(url, params=params)    # url에 parm정보추가
+    json = r.json()
+    pprint(json)
+    print(json['response']['body']['items'])
+    if json['response']['body']['items'] == '': 
+        print("지도에 약국x")
+        return -1
+    pharm = json['response']['body']['items']['item']
+    
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor()  
+        removeAll = f'''DELETE FROM pharm_Info '''
+        print(removeAll)  
+        cur.execute(removeAll)   
+        for data in pharm: 
+            # print(data)
+            name = data['yadmNm']
+            addr = data['addr']
+            lng = data['XPos']
+            lat = data['YPos']
+            weekday_open = 8
+            weekday_close = 19
+            weekend_open = 13
+            weekend_close = 17
+            distance = data['distance']
+            prescribe_possible = "ok"
+            ran = random.randrange(0,100)
+            if ran % 3 == 1: prescribe_possible = "no"
+            elif ran % 3 == 2: prescribe_possible = "unknown" 
+            # prescribe_possible = "ok" # ok, no, unknown
+            sql = f'''INSERT INTO pharm_Info(name, addr, lat, lng, distance, weekday_open, weekday_close, 
+                                                weekend_open, weekend_close, prescribe_possible)
+                        VALUES (\'{name}\', \'{addr}\', \'{lat}\', \'{lng}\', \'{distance}\'
+                                    , \'{weekday_open}\', \'{weekday_close}\', \'{weekend_open}\'
+                                        , \'{weekend_close}\', \'{prescribe_possible}\');
+            '''
+            print(sql)
+            cur.execute(sql)
+        conn.commit()
+        conn.close()
+        # print(sql)
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+    return 1;
+
+# db의 약국정보들 불러오기
+def get_pharm_list():
+    sql = f'''SELECT *
+              FROM pharm_Info
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor()
+        cur.execute(sql)
+        print(sql)
+        result = cur.fetchall() 
+        pprint(result)
+        conn.commit()
+        conn.close()
+        return result
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+# db에 약국정보가 있는지 확인하기 위해 하나만 검색 
+def get_pharm(name):
+    sql = f'''SELECT name
+              FROM pharm_Info
               WHERE name=\'{name}\'
     '''
     try:
@@ -234,7 +349,7 @@ def visited_record(local, domain):
         return -1
 
 def add_hosp(lat, lng):
-    json = hosp_list(lat, lng)
+    json = hosp_list_api(lat, lng)
     hosp = json['response']['body']['items']['item']
     try:
         conn = pg.connect(connect_string)
@@ -286,8 +401,62 @@ def add_favorite_hospital(hospital_name, local, domain):
     except pg.OperationalError as e:
         print(e)
         return -1
+
+def get_favorite_hospital_list(local, domain):
+    sql = f'''SELECT hospital_name
+              FROM favorite_hospital
+              WHERE local=\'{local}\' and domain=\'{domain}\'
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(sql)
+        result = cur.fetchall()
+        print(sql)
+        conn.commit()
+        conn.close()
+        return result
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+def add_reservation(name, phone_number, date, institution_name):
+    print("add reserve")
+    sql = f'''INSERT INTO reservation_list(name, phone_number, date, institution_name)
+              VALUES (\'{name}\', \'{phone_number}\', \'{date}\', \'{institution_name}\');
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(sql)
+        print(sql)
+        conn.commit()
+        conn.close()
+        return 1
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+def get_reservation_list(institution_name):
+    sql = f'''SELECT name, phone_number, date
+              FROM reservation_list
+              WHERE institution_name=\'{institution_name}\'
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(sql)
+        result = cur.fetchall()
+        print(sql)
+        conn.commit()
+        conn.close()
+        return result
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
 if __name__ == ("__main__"):
     lng = 127.0331892    # 파라미터로 받아오거나 한양대 위도,경도로 설정
     lat = 37.5585146
-    pprint(hosp_list(lat, lng))
+    pprint(hosp_list_api(lat, lng))
     # pprint(get_hosp_list())

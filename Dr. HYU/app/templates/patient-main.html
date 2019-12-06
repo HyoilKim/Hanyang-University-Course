@@ -56,12 +56,10 @@
               hosp_list = JSON.parse(res)
 
               console.log(hosp_list)
-              var okimage = "http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png"; 
-              var noimage = "http://i1.daumcdn.net/dmaps/apis/n_local_blit_04.png"
+              var okimage = "https://i.ibb.co/Lhv2d1F/image.png"; 
+              var noimage = "https://i.ibb.co/ZMYKJ4q/image.png"
               
               // 기존 마커 우째 지우노
-
-
 
 
               // 마커를 생성 & 마커 정보 기입
@@ -112,22 +110,77 @@
       $("#search-pharmacy").click((e) => {
         // 마커 표시
         console.log("약국검색")
-        var marker = new kakao.maps.Marker({ 
-            position: map.getCenter() 
-        }); 
-        marker.setMap(map);
+        center = map.getCenter()
+        let position = {
+          "lat": center['Ga'],
+          "lng": center['Ha']
+        }
+        console.log(position)
+        $.ajax({
+            type: "POST",
+            url: "/pharmacy_list",
+            data: JSON.stringify(position),
+            cache: false,
+            contentType: "application/json",
+            success: res => {
+              if (res == -1) return -1;
+              pharm_list = JSON.parse(res)
+
+              console.log(pharm_list)
+              var okimage = "https://i.ibb.co/DbsZvw2/image.png"; 
+              var noimage = "https://i.ibb.co/VW2Rg6p/image.png"
+
+              // 마커를 생성 & 마커 정보 기입
+              for (var i = 0; i < pharm_list.length; i ++) {
+                  latlng = new kakao.maps.LatLng(pharm_list[i][3], pharm_list[i][4])
+                  pharm = pharm_list[i]
+                  contents = ""
+                  contents += "이름: "+pharm[1]+"\n"
+                  contents += "주소: "+pharm[2]+"\n"
+                  contents += "거리: "+(Number(pharm[5])/1000).toFixed(1)+"km"+"\n"
+                  contents += "평일진료시간: "+pharm[6]+"~"+pharm[7]+"\n"
+                  contents += "주말진료시간: "+pharm[8]+"~"+pharm[9]+"\n"
+                  contents += "처방가능여부: "+pharm[10]+"\n"
+                  // 진료시간에 따른 마커이미지
+                  var date = new Date()
+                  day = date.getDay()
+                  hour = date.getHours()
+                  openTime = 0
+                  closeTime = 0
+                  if(day >= 1 && day <= 5){
+                    openTime = pharm[6] 
+                    closeTime = pharm[7]
+                  } else {
+                    openTime = pharm[8]
+                    closeTime = pharm[9]
+                  }
+                  var imageSize = new kakao.maps.Size(24, 35); 
+                  var markerImage;
+                  if (hour >= openTime && hour <= closeTime){
+                    markerImage = new kakao.maps.MarkerImage(okimage, imageSize);
+                    console.log("open")
+                  } else{
+                    markerImage = new kakao.maps.MarkerImage(noimage, imageSize);
+                  }
+                  // 마커 옵션 설정
+                  var marker = new kakao.maps.Marker({
+                      map: map, // 마커를 표시할 지도
+                      position: latlng, // 마커를 표시할 위치
+                      title: contents, // 마커의 타이틀, 마커에 마우스를 올리면 타이틀이 표시됩니다
+                      image: markerImage // 마커 이미지 
+                  });
+              }
+            }
+        })
       })
 
       $("#privacy-info").click((e) => {
         e.preventDefault()
-        console.log("개인정보출력")
-        var cookies = document.cookie.split(";");
-        cookie = cookies[2]
-        cookie = cookie.substring(1)
-        tmp = cookie.split('@')
+        console.log("최근방문 병원목록")
+        var cookies = document.cookie.split(";")
+        tmp = cookies[2].split('@')
         local = tmp[0]
-        tmp = tmp[1].split('\n')
-        domain = tmp[0]
+        domain = tmp[1]
         console.log(local)
         console.log(domain)
         let email = {
@@ -141,6 +194,10 @@
             data: JSON.stringify(email),
             contentType: "application/json",
             success: res => {
+              if (res.length == 0) {
+                alert("x")
+                return
+              }
               records = JSON.parse(res)
               let tBodyHtml = ''
               console.log(records)
@@ -150,39 +207,74 @@
                       <td>${row[1]}</td>
                   </tr>`
               }
-              $('table tbody').html(tBodyHtml)
+              $('#recent-visited tbody').html(tBodyHtml)
             }
         })
       })
 
-      $("#favorite").click((e) => {
-        console.log("즐찾")
+      // 자주가는 병원등록
+      $("#prefer").submit((e) => {
         e.preventDefault()
-        var cookies = document.cookie.split(";");
-        cookie = cookies[2]
-        cookie = cookie.substring(1)
-        tmp = cookie.split('@')
+        console.log("즐찾")
+        var cookies = document.cookie.split(";")
+        tmp = cookies[2].split('@')
         local = tmp[0]
-        tmp = tmp[1].split('\n')
-        domain = tmp[0]
-        // console.log(e.hospital_name)
-        // console.log(e.target.hospital_name)
-        let formData = {
-            "hospital_name": e.target.hospital_name.value, //??ㅅㅂ왜안돼
-            "local": local,
-            "domain": domain
+        domain = tmp[1]
+        console.log(e.target.hospital_name.value)
+        let hospital_info = {
+          'local': local,
+          'domain': domain,
+          'hospital_name': e.target.hospital_name.value
         }
         $.ajax({
             type: "POST",
             url: "/add_favorite",
             cache: false,
-            data: JSON.stringify(formData),
+            data: JSON.stringify(hospital_info),
             contentType: "application/json",
             success: res => {
-                console.log("favorite added")
+              console.log("@@@@@@@@@@@")
+              if(res.length == 0){
+                alert("등록된 병원x")
+                return
+              }
+              favorite_list = JSON.parse(res)
+              let tBodyHtml = ''
+              console.log(favorite_list)
+              for(let row of favorite_list){
+                  tBodyHtml += `<tr>
+                      <td>${row[0]}</td>
+                  </tr>`
+              }
+              $('#favorite tbody').html(tBodyHtml)
             }
         })
-      });
+      })
+      
+      // 병원, 약국 예약하기
+      $("reservation").submit((e) => {
+        alert("예약")
+        e.preventDefault()
+        console.log("예약")
+        let reservation_info = {
+          'name': e.target.name.value,
+          'phone_number': e.target.phone_number.value,
+          'date': e.target.date.value,
+          'institution': e.target.institution.value
+        }
+        alert(reservation_info)
+        $.ajax({
+            type: "POST",
+            url: "/add_reservation",
+            cache: false,
+            data: JSON.stringify(reservation_info),
+            contentType: "application/json",
+            success: res => {
+              console.log(res)
+              if (res == 1) alert("예약성공")
+            }
+        })
+      })
     })
   </script>
 </head>
@@ -195,28 +287,40 @@
   </div>
   <div id="map" style="width:500px;height:400px;"></div>
   <button id="privacy-info">최근 방문한 병원</button>
-  <form id="favorite">
-      <input type="text" name="hospital_name" placeholder="Hospital Name"/>
-      <button type="submit">자주가는 병원등록</button>
-  </form>
-  <form id="reservation"'>
+
+  <form id="prefer" method="POST">
     <input type="text" name="hospital_name" placeholder="Hospital Name"/>
-    <input type="text" name="time" placeholder="YYMMDDHH"/>
-    <button type="submit">예약하기</button>
+    <button type="submit">자주가는 병원등록 및 조회</button>
   </form>
+  <form id="reservation" method="POST" action="add_reservation">
+      <input type="text" name="name" placeholder="my Name"/>
+      <input type="text" name="institution_name" placeholder="Hosp or Pharm Name"/>
+      <input type="text" name="date" placeholder="YY-MM-DD"/>
+      <input type="number" name="phone_number" placeholder="Phone Number"/>
+      <button type="submit">예약하기</button>
+  </form>
+
   <button id="description" type="button">처방전 열람</button>
   <h3>최근방문한 병원</h3>
-        <table id="recent-visited">
-            <thead>
-                <tr>
-                    <th>이름</th>
-                    <th>날짜</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
+    <table id="recent-visited">
+        <thead>
+            <tr>
+                <th>이름</th>
+                <th>날짜</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
   <h3>자주가는 병원</h3>
-        
+    <table id="favorite">
+        <thead>
+            <tr>
+                <th>이름</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
 </body>
 </html>
