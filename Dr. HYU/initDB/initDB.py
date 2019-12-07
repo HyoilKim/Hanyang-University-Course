@@ -33,7 +33,7 @@ def create_customersInfo_table():
     sql = f'''CREATE TABLE customers_Info (
                 id SERIAL NOT NULL,
                 name varchar(20) NOT NULL,
-                phone_number integer NOT NULL PRIMARY KEY,
+                phone_number varchar(20) NOT NULL PRIMARY KEY,
                 local varchar(20) NOT NULL,
                 domain varchar(20) NOT NULL,
                 password varchar(20) NOT NULL,
@@ -277,7 +277,7 @@ def create_reservation_list_table():
     sql = f'''CREATE TABLE reservation_list (
                 id SERIAL NOT NULL,
                 name varchar(20) NOT NULL,
-                phone_number integer NOT NULL,
+                phone_number varchar(20) NOT NULL,
                 date varchar(20) NOT NULL,
                 institution_name varchar(20) NOT NULL
             );
@@ -308,11 +308,10 @@ def create_prescription_list_table():
                 patient_name varchar(20) NOT NULL,
                 hospital_name varchar(100) NOT NULL,
                 hospital_date varchar(20) NOT NULL,
-                serial integer NOT NULL,
                 medicine_name varchar(20) NOT NULL,
-                dose_amount integer NOT NULL,         
-                dose_num integer NOT NULL,
-                dose_day integer NOT NULL,
+                amount_per_onetime integer NOT NULL,         
+                count_per_oneday integer NOT NULL,
+                how_long_day integer NOT NULL,
                 pharmacy_date varchar(20),
                 pharmacy_name varchar(100),
                 pharamcy_opinion varchar(100)
@@ -329,14 +328,14 @@ def create_prescription_list_table():
         print(e)
         
 if __name__ == "__main__":
-    create_customersInfo_table()
-    init_customersInfo_table()
+    # create_customersInfo_table()
+    # init_customersInfo_table()
     # create_hospInfo_table()
     # init_hospInfo_table()
     # create_visited_record_table()
     # add_visited_record()
     # create_favorite_hospital_table()
     # create_pharmInfo_table()
-    # create_prescription_list_table()
+    create_prescription_list_table()
     # create_reservation_list_table()
 

@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request
 from db import search_customerInfo, insert_customerInfo, set_type, get_hosp_list, visited_record
 from db import add_favorite_hospital, update_hospInfo_table, update_pharmInfo_table, get_pharm_list
-from db import get_favorite_hospital_list, add_reservation, get_hospital_name, get_reservation_list
+from db import get_favorite_hospital_list, add_reservation, get_hospital_name, reservation_list
+from db import cancel_reservation
 import json
 from pprint import pprint
 # from apicall import hosp_list, pharm_list
@@ -113,16 +114,33 @@ def add_reservation_info():
 
 # 병원관리자가 예약 list를 보는 것
 @app.route('/reservation_list', methods=["POST"])
-def reservation_list():
+def reservation_patient():
     req = request.get_json()
     local = req['local']
     domain = req['domain']
     tmp = get_hospital_name(local, domain)
+    print("병원이름")
+    print(tmp)
     if(tmp == []):
         print("xxxx")
-        return json.dumps(tmp)
+        return tmp
     institution_name = tmp[0][0]
-    return json.dumps(get_reservation_list(institution_name))
+    return json.dumps(reservation_list(institution_name))
+    
+@app.route('/cancel_reservation', methods=["POST"])
+def delete_reservation():
+    print("cancel")
+    req = request.get_json()
+    local = req['local']
+    domain = req['domain']
+    phone_number = req['phone_number']
+    date = req['date']
+    tmp = get_hospital_name(local, domain)
+    institution_name = tmp[0][0]
+    cancel_reservation(institution_name, phone_number, date)
+    print("cancel")
+    
+    return json.dumps(reservation_list(institution_name))   #취소하고 다시 reload
 
 # Ensure responses aren't cached
 @app.after_request

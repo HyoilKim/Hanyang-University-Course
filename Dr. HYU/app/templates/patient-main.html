@@ -89,7 +89,7 @@
                   }
                   var imageSize = new kakao.maps.Size(24, 35); 
                   var markerImage;
-                  if (hour >= openTime && hour <= closeTime){
+                  if (hour >= openTime && hour < closeTime){
                     markerImage = new kakao.maps.MarkerImage(okimage, imageSize);
                     console.log("open")
                   } else{
@@ -156,7 +156,7 @@
                   }
                   var imageSize = new kakao.maps.Size(24, 35); 
                   var markerImage;
-                  if (hour >= openTime && hour <= closeTime){
+                  if (hour >= openTime && hour < closeTime){
                     markerImage = new kakao.maps.MarkerImage(okimage, imageSize);
                     console.log("open")
                   } else{
@@ -174,15 +174,23 @@
         })
       })
 
+      tmp = ""
+      local = ""
+      domain = ""
+      var cookies = document.cookie.split(";")
+      console.log(cookies)
+      if (cookies[0].substring(0, 1) == "P"){
+          tmp = cookies[2].split("@")
+          local = tmp[0].substring(1, tmp[0].length)
+          domain = tmp[1]
+      } else{
+          tmp = cookies[0].split("@")
+          local = tmp[0]
+          domain = tmp[1]
+      }
       $("#privacy-info").click((e) => {
         e.preventDefault()
         console.log("최근방문 병원목록")
-        var cookies = document.cookie.split(";")
-        tmp = cookies[2].split('@')
-        local = tmp[0]
-        domain = tmp[1]
-        console.log(local)
-        console.log(domain)
         let email = {
           'local': local,
           'domain': domain
@@ -216,10 +224,6 @@
       $("#prefer").submit((e) => {
         e.preventDefault()
         console.log("즐찾")
-        var cookies = document.cookie.split(";")
-        tmp = cookies[2].split('@')
-        local = tmp[0]
-        domain = tmp[1]
         console.log(e.target.hospital_name.value)
         let hospital_info = {
           'local': local,

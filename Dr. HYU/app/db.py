@@ -437,10 +437,11 @@ def add_reservation(name, phone_number, date, institution_name):
         print(e)
         return -1
 
-def get_reservation_list(institution_name):
+def reservation_list(institution_name):
     sql = f'''SELECT name, phone_number, date
               FROM reservation_list
               WHERE institution_name=\'{institution_name}\'
+              ORDER BY date ASC
     '''
     try:
         conn = pg.connect(connect_string)
@@ -451,6 +452,36 @@ def get_reservation_list(institution_name):
         conn.commit()
         conn.close()
         return result
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+def cancel_reservation(institution_name, phone_number, date):
+    sql = f'''DELETE
+              FROM reservation_list
+              WHERE id IN (
+                  SELECT id 
+                  FROM reservation_list
+                  WHERE institution_name= \'{institution_name}\' and phone_number = \'{phone_number}\' and date = \'{date}\'
+                  LIMIT 1
+              )
+    '''
+    tmp = f'''SELECT * FROM reservation_list'''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(tmp)
+        print(cur.fetchall())
+        
+        cur.execute(sql)
+        print(sql)
+
+        cur.execute(tmp)
+        print(cur.fetchall())
+
+        conn.commit()
+        conn.close()
+        return 
     except pg.OperationalError as e:
         print(e)
         return -1

@@ -10,18 +10,25 @@
         <script>
             // 예약 조회
             $(document).ready(function () {
-                $("#reservation").submit((e) => {
+                tmp = ""
+                local = ""
+                domain = ""
+                var cookies = document.cookie.split(";")
+                console.log(cookies)
+                if (cookies[0].substring(0, 1) == "P"){
+                    tmp = cookies[2].split("@")
+                    local = tmp[0].substring(1, tmp[0].length)
+                    domain = tmp[1]
+                } else{
+                    tmp = cookies[0].split("@")
+                    local = tmp[0]
+                    domain = tmp[1]
+                }
+                
+                $("#reservation_list").submit((e) => {
                     e.preventDefault()
                     console.log("예약 조회")
-                    var cookies = document.cookie.split(";")
-                    tmp = cookies[2].split("@")
-                    local = tmp[0].substring(1)
-                    console.log(local)
-                    domain = tmp[1]
-                    let reservation_info = {
-                        'name': e.target.name.value,
-                        'phone_number': e.target.phone_number.value,
-                        'date': e.target.date.value,
+                    let hospital_info = {
                         'local': local,
                         'domain': domain
                     }
@@ -29,64 +36,73 @@
                         type: "POST",
                         url: "/reservation_list",
                         cache: false,
-                        data: JSON.stringify(reservation_info),
+                        data: JSON.stringify(hospital_info),
                         contentType: "application/json",
                         success: res => {
                             if(res == []) alert("예약x")
-                            favorite_list = JSON.parse(res)
-                            console.log(favorite_list)
+                            search_result = JSON.parse(res)
+                            console.log(search_result)
                             let tBodyHtml = ''
-                            for(let row of favorite_list){
+                            for(let row of search_result){
                                 tBodyHtml += `<tr>
                                     <td>${row[0]}</td>
                                     <td>${row[1]}</td>
                                     <td>${row[2]}</td>
                                 </tr>`
                             }
-                            $('#reservation_list tbody').html(tBodyHtml)
+                            $('#reservation_table tbody').html(tBodyHtml)
                         }
                     })
+                })
+
+                $("#cancel").submit((e) => {
+                    alert("예약취소")
+                    e.preventDefault()
+                    console.log("예약 취소")
+                    var cookies = document.cookie.split(";")
+                    
+                    let cancel_info = {
+                        'phone_number': e.target.phone_number.value,
+                        'date': e.target.date.value,
+                        'local': local,
+                        'domain': domain
+                    }
+                    $.ajax({
+                        type: "POST",
+                        url: "/cancel_reservation",
+                        cache: false,
+                        data: JSON.stringify(cancel_info),
+                        contentType: "application/json",
+                        success: res => {
+                            console.log(res)
+                        }
+                    })
+                })
+
+
+                $("#add_description").submit((e) => {
+                    
                 })
             })
         </script>
     </head>
     <body>
-        <!--
-            현재예약자: 예약자이름, 전화번호, 예약시간
-            처방하기
-            환자정보와처방기록(이름, 번호, )
-        -->
         <h2>병원관리자 화면</h2>
-        <button id="description" type="button">처방하기</button>
-        <form id="reservation" method="POST">
-            <input type="text" name="name" placeholder="Patient Name"/>
+        <form id="add_description" method="POST">
+            <input type="text" name="date" placeholder="Date"/>
+            <input type="text" name="patient_name" placeholder="Patient Nmae"/>
+            <input type="text" name="medicine_name" placeholder="Medicine Nmae"/></br>
+            <input type="text" name="amount_per_onetime" placeholder="Patient Nmae"/>
+            <input type="text" name="count_per_oneday" placeholder="Patient Nmae"/>
+            <input type="text" name="how_long_day" placeholder="Patient Nmae"/>
+            <button id="description" type="submit">처방하기</button>
+        </form>
+        <form id="description_list" method="POST">
+            <input type="number" name="name" placeholder="Patient Nmae"/>
             <input type="number" name="phone_number" placeholder="010XXXXXXXX"/>
             <input type="text" name="date" placeholder="YYYY-MM-DD"/>
-            <button type="submit">예약자 조회</button>
+            <button type="submit">처방조회</button>
         </form>
-        <form id="reservation" method="POST">
-            <input type="number" name="phone_number" placeholder="010XXXXXXXX"/>
-            <button type="submit">예약 취소</button>
-        </form>
-            
-        <h3>예약 목록</h3>
-        <table id="reservation_list">
-            <thead>
-                <tr>
-                    <th>[예약자 이름]</th>
-                    <th>[전화번호]</th>
-                    <th>[날짜]</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-        <!-- 
-            # 발급 년월일 번호
-            # 환자 이름
-            # 병원 이름
-            # 처방의약품의 명칭, 1회투약량, 1일 투여횟수, 총투약일수
-        -->
         <h3>처방 기록</h3>
         <table id="description_list">
             <thead>
@@ -98,6 +114,27 @@
                     <th>[1회 투약량]</th>
                     <th>[1회 투여 횟수]</th>
                     <th>[1회 총 투약일 수]</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        </br>
+        <form id="reservation_list" method="POST">
+            <button type="submit">예약자 조회</button>
+        </form>
+        <form id="cancel" method="POST">
+            <input type="number" name="phone_number" placeholder="010XXXXXXXX"/>
+            <input type="text" name="date" placeholder="YYYY-MM-DD"/>
+            <button type="submit">예약 취소</button>
+        </form>
+        <h3>예약 목록</h3>
+        <table id="reservation_table">
+            <thead>
+                <tr>
+                    <th>[예약자 이름]</th>
+                    <th>[전화번호]</th>
+                    <th>[날짜]</th>
                 </tr>
             </thead>
             <tbody>
