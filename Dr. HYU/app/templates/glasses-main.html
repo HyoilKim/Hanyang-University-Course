@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>
+            약국 관리자
+        </title>
+        <script src="https://code.jquery.com/jquery-3.4.1.js"
+        integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
+        <script>
+            // 예약 조회
+            $(document).ready(function () {
+                tmp = ""
+                local = ""
+                domain = ""
+                var cookies = document.cookie.split(";")
+                console.log(cookies)
+                if (cookies[0].substring(0, 1) == "P"){
+                    tmp = cookies[2].split("@")
+                    local = tmp[0].substring(1, tmp[0].length)
+                    domain = tmp[1]
+                } else{
+                    tmp = cookies[0].split("@")
+                    local = tmp[0]
+                    domain = tmp[1]
+                }
+                
+                $("#reservation_list").submit((e) => {
+                    e.preventDefault()
+                    console.log("예약 조회")
+                    let pharmacy_info = {
+                        'local': local,
+                        'domain': domain
+                    }
+                    $.ajax({
+                        type: "POST",
+                        url: "/reservation_list",
+                        cache: false,
+                        data: JSON.stringify(pharmacy_info),
+                        contentType: "application/json",
+                        success: res => {
+                            console.log(res)
+                            if(res == []) alert("예약x")
+                            search_result = JSON.parse(res)
+                            console.log(search_result)
+                            let tBodyHtml = ''
+                            for(let row of search_result){
+                                tBodyHtml += `<tr>
+                                    <td>${row[0]}</td>
+                                    <td>${row[1]}</td>
+                                    <td>${row[2]}</td>
+                                    <td>${row[3]}</td>
+                                </tr>`
+                            }
+                            $('#reservation_table tbody').html(tBodyHtml)
+                        }
+                    })
+                })
+
+                $("#search_description").submit((e) => {
+                    console.log("처방검색")
+                    e.preventDefault()
+                    let patient_info = {
+                        'local': local,
+                        'domain': domain,
+                        'patient_name': e.target.patient_name.value,
+                        "date": e.target.date.value
+                    }
+                    $.ajax({
+                        type: "POST",
+                        url: "/glasses_search_description",
+                        cache: false,
+                        data: JSON.stringify(patient_info),
+                        contentType: "application/json",
+                        success: res => {
+                            if(res == []) alert("처방내역x")
+                            search_result = JSON.parse(res)
+                            console.log(search_result)
+                            let tBodyHtml = ''
+                            for(let row of search_result){
+                                tBodyHtml += `<tr>
+                                    <td>${row[0]}</td>
+                                    <td>${row[3]}</td>
+                                    <td>${row[4]}</td>
+                                    <td>${row[5]}</td>
+                                    <td>${row[6]}</td>
+                                    <td>${row[7]}</td>
+                                    <td>${row[8]}</td>
+                                    <td>${row[1]}</td>
+                                    <td>${row[1]}</td>
+                                    <td>${row[2]}</td>
+                                    
+                                </tr>`
+                            }
+                            $('#description_record tbody').html(tBodyHtml)
+                        }
+                    })
+                })
+                // $("prescribe").submit((e) => {
+                //     console.log("처방하기")
+                //     e.preventDefault()
+                //     let description_info = {
+                //         'local': local,
+                //         'domain': domain,
+                //         'serial': e.target.serial.value,
+                //         'patient_name': e.target.patient_name.value
+                //     }
+                //     $.ajax({
+                //         type: "POST",
+                //         url: "/glasses_prescribe",
+                //         cache: false,
+                //         data: JSON.stringify(description_info),
+                //         contentType: "application/json",
+                //         success: res => {
+                //             if(res == 1) alert("처방완료")
+                //             search_result = JSON.parse(res)
+                //             console.log(search_result)
+                //         }
+                //     })
+                // })
+
+                $("#visited_record").click((e) => {
+                    console.log("처방기록")
+                    e.preventDefault()
+                    let glasses_info = {
+                        'local': local,
+                        'domain': domain,
+                    }
+                    $.ajax({
+                        type: "POST",
+                        url: "/visit_record",
+                        cache: false,
+                        data: JSON.stringify(glasses_info),
+                        contentType: "application/json",
+                        success: res => {
+                            search_result = JSON.parse(res)
+                            console.log(search_result)
+                            let tBodyHtml = ''
+                            for(let row of search_result){
+                                tBodyHtml += `<tr>
+                                    <td>${row[0]}</td>
+                                    <td>${row[1]}</td>
+                                </tr>`
+                            }
+                            $('#visited_table tbody').html(tBodyHtml)
+                        }
+                    })
+                })
+            })
+        </script>
+    </head>
+    <body> 
+        <form method="POST" action="/login">
+            <button type="submit">로그인 화면</button>
+        </form>
+        <h2>안경원 관리자 화면</h2>
+        <h3>예약 목록</h3>
+        <form id="reservation_list" method="POST">
+            <button type="submit">예약자 조회</button>
+        </form>
+        <table id="reservation_table">
+            <thead>
+                <tr>
+                    <th>[예약 번호]</th>
+                    <th>[예약자 이름]</th>
+                    <th>[전화번호]</th>
+                    <th>[날짜]</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        </br>
+        <h3>처방전 조회</h3>
+        <form id="search_description" method="POST">
+            <button type="submit">처방조회</button></br>
+            <input type="patient_name" name="patient_name" placeholder="Patient name"/>
+            <input type="text" name="date" placeholder="YYYY-MM-DD-HH-MM"/>
+        </form>
+        <table id="description_record">
+            <thead>
+                <tr>
+                    <th>[번호]</th>
+                    <th>[환자 이름]</th>
+                    <th>[병원 이름]</th>
+                    <th>[나안시력(R)]</th>
+                    <th>[나안시력(L)]</th>
+                    <th>[교정시력(R)]</th>
+                    <th>[교정시력(L)]</th>
+                    <th>[검사일]</th>
+                    <th>[발급일]</th>
+                    <th>[시력권장일]</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        </br>
+        <h3>처방하기</h3>
+        <form id="prescribe" method="POST" action='/glasses_prescribe'>
+            <input tyep="text" name="patient_name" placeholder="patient name">
+            <input tyep="text" name="glasses_name" placeholder="glasses store name">
+            <input tyep="text" name="date" placeholder="YYYY-MM-DD-HH-MM">
+            <button type="submit">처방하기</button>
+        </form>
+        
+        <h3>환자 방문 기록</h3>
+        <button id="visited_record" type="submit">조회</button>
+        <table id="visited_table">
+            <thead>
+                <tr>
+                    <th>[이름]</th>
+                    <th>[날짜]</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </body>
+</html>

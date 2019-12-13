@@ -6,6 +6,8 @@ import requests
 from apicall import hosp_list
 from pprint import pprint
 from datetime import datetime
+from urllib.request import urlopen
+from bs4 import BeautifulSoup
 
 pg_local = {
     'host': "localhost", # localhost
@@ -162,7 +164,7 @@ def create_pharmInfo_table():
                 weekday_close integer NOT NULL,
                 weekend_open integer NOT NULL,
                 weekend_close integer NOT NULL,
-                prescribe_possible varchar(100) NOT NULL
+                prescribe_possible varchar(100) DEFAULT 'unknown'                
             );
     '''
     try:
@@ -216,10 +218,9 @@ def init_hospInfo_table():
 def create_visited_record_table():
     sql = f'''CREATE TABLE visited_record (
                 id SERIAL NOT NULL,
-                hospital_name varchar(20) NOT NULL,
-                time varchar(100) NOT NULL,
-                local varchar(20) NOT NULL,
-                domain varchar(20) NOT NULL
+                patient_name varchar(20) NOT NULL,
+                institution_name varchar(20) NOT NULL,
+                date varchar(100) NOT NULL
             );
     '''
     try:
@@ -231,27 +232,6 @@ def create_visited_record_table():
         conn.close()
     except pg.OperationalError as e:
         print(e)
-        
-# 방문 기록 추가
-def add_visited_record():
-    hospital_name = "서울성심병원"
-    time = "2019-07-15"
-    local = "tfalkc"
-    domain = "smh.com.au"
-    sql = f'''INSERT INTO visited_record(hospital_name, time, local, domain)
-                      VALUES (\'{hospital_name}\', \'{time}\', \'{local}\', \'{domain}\');
-    '''
-    try:
-        conn = pg.connect(connect_string)
-        cur = conn.cursor() 
-        cur.execute(sql)
-        print(sql)
-        conn.commit()
-        conn.close()
-        return 1
-    except pg.OperationalError as e:
-        print(e)
-        return -1
 
 # 즐겨찾는 병원 목록
 def create_favorite_hospital_table():
@@ -300,21 +280,65 @@ def create_reservation_list_table():
 # 조제 연월일
 # 병원 이름
 # 처방 변경-수정-확인 내용
-def create_prescription_list_table():
+def create_description_list_table():
     sql = f'''CREATE TABLE prescription_list (
                 id SERIAL NOT NULL,
-                local varchar(20) NOT NULL,
-                domain varchar(20) NOT NULL,
-                patient_name varchar(20) NOT NULL,
-                hospital_name varchar(100) NOT NULL,
-                hospital_date varchar(20) NOT NULL,
-                medicine_name varchar(20) NOT NULL,
-                amount_per_onetime integer NOT NULL,         
-                count_per_oneday integer NOT NULL,
-                how_long_day integer NOT NULL,
-                pharmacy_date varchar(20),
+                patient_name varchar(20),
+                phone_number varchar(20),
+                hospital_name varchar(100),
+                hospital_date varchar(30),
+                medicine_name varchar(20),
+                amount_per_onetime integer,         
+                count_per_oneday integer,
+                how_long_day integer,
+                pharmacy_date varchar(30),
                 pharmacy_name varchar(100),
-                pharamcy_opinion varchar(100)
+                pharmacy_opinion varchar(100),  
+                pharmacy_status varchar(10) DEFAULT 'unknown'
+            );
+    '''
+    try:
+        conn = pg.connect(connect_string) # DB연결(로그인)
+        cur = conn.cursor() # DB 작업할 지시자 정하기
+        print(sql)
+        cur.execute(sql) # sql 문을 실행
+        conn.commit()
+        conn.close()
+    except pg.OperationalError as e:
+        print(e)
+
+def create_glass_store_table():
+    sql = f'''CREATE TABLE glasses_store (
+                lat double precision,
+                lng double precision,
+                name varchar(50),
+                addr varchar(100),
+                type varchar(10)
+            );
+    '''
+    try:
+        conn = pg.connect(connect_string) # DB연결(로그인)
+        cur = conn.cursor() # DB 작업할 지시자 정하기
+        print(sql)
+        cur.execute(sql) # sql 문을 실행
+        conn.commit()
+        conn.close()
+    except pg.OperationalError as e:
+        print(e)
+
+
+def create_glasses_description_table():
+    sql = f'''CREATE TABLE glasses_description (
+                id serial NOT NULL,
+                hospital_date varchar(20),
+                patient_name varchar(50),
+                hospital_name varchar(50),
+                r_vision varchar(10),
+                l_vision varchar(10),
+                fixed_r_vision varchar(10),
+                fixed_l_vision varchar(10),
+                galsses_date varchar(20),
+                recommend_date varchar(20)
             );
     '''
     try:
@@ -327,6 +351,72 @@ def create_prescription_list_table():
     except pg.OperationalError as e:
         print(e)
         
+def init_glass_store_table():
+    # 네이버 검색 결과
+    res = requests.get('https://search.naver.com/search.naver?sm=tab_hty.top&where=nexearch&query=%ED%95%9C%EC%96%91%EB%8C%80+%EC%95%88%EA%B2%BD%EC%A0%90&oquery=%EC%95%88%EA%B2%BD%EC%A0%90&tqi=UQ55jsprvN8ssv165RZssssssNC-479615')
+    soup = BeautifulSoup(res.content, 'html.parser')
+    try:
+        conn = pg.connect(connect_string) # DB연결(로그인)
+        cur = conn.cursor() # DB 작업할 지시자 정하기
+        for link in soup.find_all('a'):
+            tmp = link.get('href')
+            tmp = str(tmp)
+            if 'lng' in tmp:
+                idx = tmp.find('lat')
+                lat = tmp[idx+4:idx+14]
+                idx = tmp.find('lng')
+                lng = tmp[idx+4:idx+14]
+                type = "naver"
+                sql = f'''INSERT INTO glasses_store(lat, lng, type)
+                        VALUES (\'{lat}\', \'{lng}\', \'{type}\')
+                '''
+                cur.execute(sql)
+                print(sql)
+        cur.execute(sql) # sql 문을 실행
+        conn.commit()
+        conn.close()
+    except pg.OperationalError as e:
+        print(e)
+
+def nikon(page):
+    url = 'http://www.nikon-lenswear.co.kr/assets/store-search-daum/com_list.php'
+    params = {
+        'sno': page,
+        'location': 'a'
+    }
+    res = requests.get(url, params=params)
+
+    try:
+        conn = pg.connect(connect_string) # DB연결(로그인)
+        cur = conn.cursor() # DB 작업할 지시자 정하기
+        # res = requests.get('http://www.nikon-lenswear.co.kr/assets/store-search-daum/com_list.php?sno=2520&location=a&tmptitle=&title_like=&isee=')   
+        soup = BeautifulSoup(res.content, 'html.parser')
+        for link in soup.find_all('div'):
+            link = str(link)
+            if '서울' in link:
+                tmp = link.split('\n')
+                if len(tmp) == 8:
+                    name = tmp[1]
+                    name = name[5:]
+                    idx = name.find('<')
+                    name = name[:idx]
+
+                    addr = tmp[2]
+                    addr = addr[5:]
+                    idx = addr.find('<')
+                    addr = addr[:idx]
+                    type = "nikon"
+                    sql = f'''INSERT INTO glasses_store (name, addr, type)
+                              VALUES (\'{name}\', \'{addr}\', \'{type}\');
+                    ''' 
+                    print(sql)
+                    cur.execute(sql) 
+
+        conn.commit()
+        conn.close()
+    except pg.OperationalError as e:
+        print(e)
+
 if __name__ == "__main__":
     # create_customersInfo_table()
     # init_customersInfo_table()
@@ -336,6 +426,13 @@ if __name__ == "__main__":
     # add_visited_record()
     # create_favorite_hospital_table()
     # create_pharmInfo_table()
-    create_prescription_list_table()
+    # create_description_list_table()
     # create_reservation_list_table()
-
+    # create_glass_store_table()
+    # init_glass_store_table()
+    # nikon(2510)
+    # nikon(2520)
+    # nikon(2430)
+    # nikon(2540)
+    create_glasses_description_table()
+    

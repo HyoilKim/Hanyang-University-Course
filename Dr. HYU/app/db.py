@@ -15,26 +15,6 @@ db_connector = pg_local
 connect_string = "host={host} user={user} dbname={dbname} password={password}".format(
     **db_connector)   
 
-# - 추가 되는 정보들 -
-# <병원 예약자 명단 Table>
-# id ,이름, 전화번호, 시각) 
-
-# <약국 예약자 명단 Table>
-# id, 이름, 전화번호, 시각)
-
-# <환자 처방기록 Table>
-# 환자 처방기록(병원 예약자 명단id(fk), 약국 예약자 명단id(fk), 처방 내용들)
-
-# <환자 시스템 Table>
-# 병원(이름, 위도, 경도, 시각(최근 간 병원), check(자주 간 병원 등록 유무))
-
-# login 정보를 바탕으로 검색하여 
-# 1) 정보가 없는 경우 
-# 2) 있는 경우 
-# 2-1) type이 없는 경우 
-# 2-2)환자 타입 
-# 2-3)병원 타입 
-# 2-4)상점 타입
 def search_customerInfo(local, domain, password):   
     sql = f'''SELECT type 
               FROM customers_Info 
@@ -191,9 +171,26 @@ def get_hosp_list():
     except pg.OperationalError as e:
         print(e)
         return -1
+
+def glasses_list():
+    sql = f'''SELECT *
+              FROM glasses_store
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor()
+        cur.execute(sql)
+        print(sql)
+        result = cur.fetchall() 
+        pprint(result)
+        conn.commit()
+        conn.close()
+        return result
+    except pg.OperationalError as e:
+        print(e)
+        return -1
       
-def get_hospital_name(local, domain):
-    print("병원 관리자 id")
+def get_institution_name(local, domain):
     print(local)
     print(domain)
     sql = f'''SELECT name
@@ -270,16 +267,25 @@ def update_pharmInfo_table(lng, lat):
             weekend_open = 13
             weekend_close = 17
             distance = data['distance']
-            prescribe_possible = "ok"
-            ran = random.randrange(0,100)
-            if ran % 3 == 1: prescribe_possible = "no"
-            elif ran % 3 == 2: prescribe_possible = "unknown" 
+            
+            tmp = f'''SELECT pharmacy_status FROM prescription_list WHERE pharmacy_name=\'{name}\' '''
+            cur.execute(tmp)
+            status = cur.fetchall()
+            print(status)
+            if status != []:
+                if status[0][0] == "ok":
+                    status = "ok"
+                elif status[0][0] =="no":
+                    status = "no"
+            else:
+                status = "unknown"
+            print(status)
             # prescribe_possible = "ok" # ok, no, unknown
             sql = f'''INSERT INTO pharm_Info(name, addr, lat, lng, distance, weekday_open, weekday_close, 
                                                 weekend_open, weekend_close, prescribe_possible)
                         VALUES (\'{name}\', \'{addr}\', \'{lat}\', \'{lng}\', \'{distance}\'
                                     , \'{weekday_open}\', \'{weekday_close}\', \'{weekend_open}\'
-                                        , \'{weekend_close}\', \'{prescribe_possible}\');
+                                        , \'{weekend_close}\', \'{status}\');
             '''
             print(sql)
             cur.execute(sql)
@@ -329,11 +335,34 @@ def get_pharm(name):
         print(e)
         return -1    
 
-def visited_record(local, domain):
-    sql = f'''SELECT hospital_name, time
+def visited_record(institution_name):
+    sql = f'''SELECT patient_name, date
               FROM visited_record
-              WHERE local=\'{local}\' and domain=\'{domain}\'
-              ORDER BY time DESC
+              WHERE institution_name=\'{institution_name}\'
+              ORDER BY date DESC
+    '''
+    sql1 = f'''SELECT * FROM visited_record'''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor()
+        cur.execute(sql)
+        print(sql)
+        result = cur.fetchall()
+        print(result)
+
+        cur.execute(sql1)
+        print(cur.fetchall())
+        conn.commit()
+        conn.close()
+        return result
+    except pg.OperationalError as e:
+        return -1
+
+def patient_visited_record(patient_name):
+    sql = f'''SELECT institution_name, date
+              FROM visited_record
+              WHERE patient_name=\'{patient_name}\'
+              ORDER BY date DESC
     '''
     try:
         conn = pg.connect(connect_string)
@@ -347,6 +376,76 @@ def visited_record(local, domain):
         return result
     except pg.OperationalError as e:
         return -1
+
+def visit_hospital(patient_name, hospital_name, date):
+    sql = f'''INSERT INTO visited_record(patient_name, institution_name, date)
+                      VALUES (\'{patient_name}\', \'{hospital_name}\', \'{date}\');
+                      
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(sql)
+        print(sql)
+        conn.commit()
+        conn.close()
+        return 1
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+def visit_pharmacy(patient_name, pharmacy_name, date):
+    sql = f'''INSERT INTO visited_record(patient_name, institution_name, date)
+                      VALUES (\'{patient_name}\', \'{pharmacy_name}\', \'{date}\');
+                      
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(sql)
+        print(sql)
+        conn.commit()
+        conn.close()
+        return 1
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+def visit_glasses(patient_name, glasses_name, date):
+    sql = f'''INSERT INTO visited_record(patient_name, institution_name, date)
+              VALUES (\'{patient_name}\', \'{glasses_name}\', \'{date}\');     
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor()
+        if cur.fetchall == []: return -1
+        cur.execute(sql)
+        print(sql)        
+        conn.commit()
+        conn.close()
+        return 1
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+def get_patient_name(id):
+    sql = f'''SELECT patient_name
+              FROM visited_record
+              WHERE id=\'{id}\'
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor()
+        cur.execute(sql)
+        print(sql)
+        result = cur.fetchall()
+        print(result)
+        conn.commit()
+        conn.close()
+        return result
+    except pg.OperationalError as e:
+        return -1
+
 
 def add_hosp(lat, lng):
     json = hosp_list_api(lat, lng)
@@ -420,10 +519,10 @@ def get_favorite_hospital_list(local, domain):
         print(e)
         return -1
 
-def add_reservation(name, phone_number, date, institution_name):
+def add_reservation(name, date, institution_name, phone_number):
     print("add reserve")
-    sql = f'''INSERT INTO reservation_list(name, phone_number, date, institution_name)
-              VALUES (\'{name}\', \'{phone_number}\', \'{date}\', \'{institution_name}\');
+    sql = f'''INSERT INTO reservation_list(name, date, institution_name, phone_number)
+              VALUES (\'{name}\', \'{date}\', \'{institution_name}\', \'{phone_number}\');
     '''
     try:
         conn = pg.connect(connect_string)
@@ -438,7 +537,7 @@ def add_reservation(name, phone_number, date, institution_name):
         return -1
 
 def reservation_list(institution_name):
-    sql = f'''SELECT name, phone_number, date
+    sql = f'''SELECT id, name, phone_number, date
               FROM reservation_list
               WHERE institution_name=\'{institution_name}\'
               ORDER BY date ASC
@@ -456,35 +555,242 @@ def reservation_list(institution_name):
         print(e)
         return -1
 
-def cancel_reservation(institution_name, phone_number, date):
+def cancel_reservation(institution_name, id):
     sql = f'''DELETE
               FROM reservation_list
-              WHERE id IN (
-                  SELECT id 
-                  FROM reservation_list
-                  WHERE institution_name= \'{institution_name}\' and phone_number = \'{phone_number}\' and date = \'{date}\'
-                  LIMIT 1
-              )
+              WHERE id = \'{id}\'
     '''
-    tmp = f'''SELECT * FROM reservation_list'''
     try:
         conn = pg.connect(connect_string)
         cur = conn.cursor() 
-        cur.execute(tmp)
-        print(cur.fetchall())
-        
         cur.execute(sql)
         print(sql)
-
-        cur.execute(tmp)
-        print(cur.fetchall())
-
         conn.commit()
         conn.close()
         return 
     except pg.OperationalError as e:
         print(e)
         return -1
+
+# 발급 년월일 번호
+# 환자 이름
+# 병원 이름
+# 처방의약품의 명칭, 1회투약량, 1일 투여횟수, 총투약일수
+# 조제 연월일
+# 병원 이름
+def add_description(hospital_date, patient_name, serial_number, hospital_name, medicine_name
+                            , amount_per_onetime, count_per_oneday, how_long_day):
+    sql = f'''INSERT INTO prescription_list(hospital_date, patient_name, id, hospital_name, medicine_name
+                , amount_per_onetime, count_per_oneday, how_long_day)
+              VALUES (\'{hospital_date}\', \'{patient_name}\', \'{serial_number}\', 
+                            \'{hospital_name}\', \'{medicine_name}\', \'{amount_per_onetime}\'
+                                , \'{count_per_oneday}\', \'{how_long_day}\');
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(sql)
+        print(sql)
+        conn.commit()
+        conn.close()
+        return 1
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+def add_glasses_description(date, recommend_date, patient_name, name, l_vision, r_vision
+                            , fixed_l_vision, fixed_r_vision):
+    sql = f'''INSERT INTO glasses_description(hospital_date, recommend_date, patient_name, hospital_name, l_vision
+                , r_vision, fixed_l_vision, fixed_r_vision)
+              VALUES (\'{date}\', \'{recommend_date}\', \'{patient_name}\', 
+                            \'{name}\', \'{l_vision}\', \'{r_vision}\'
+                                , \'{fixed_l_vision}\', \'{fixed_r_vision}\');
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(sql)
+        print(sql)
+        conn.commit()
+        conn.close()
+        return 1
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+# 처방옵션
+def search_description_record(patient_name, serial_number, date):
+    sql = f'''SELECT id, hospital_date, patient_name, hospital_name, medicine_name, amount_per_onetime, count_per_oneday, how_long_day
+                        ,pharmacy_name, pharmacy_date, pharmacy_opinion
+              FROM prescription_list
+              WHERE patient_name=\'{patient_name}\' or id=\'{serial_number}\'
+                    or hospital_date LIKE \'{date}%\'
+    '''
+    tmp = f'''SELECT * FROM prescription_list'''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(sql)
+        result = cur.fetchall()
+        # cur.execute(tmp)
+        # pprint(cur.fetchall())
+        print(sql)
+        conn.commit()
+        conn.close()
+        return result
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+# 예약한 환자들 중 처방을 받은 환자 조회
+def glasses_search_description(patient_name, glasses_name, date):
+    sql = f'''SELECT id, hospital_date, recommend_date, patient_name, hospital_name, l_vision
+                , r_vision, fixed_l_vision, fixed_r_vision
+              FROM glasses_description
+              WHERE hospital_date LIKE \'{date}%\' and 
+                            patient_name IN (SELECT name
+                            FROM reservation_list
+                            WHERE institution_name=\'{glasses_name}\')
+    '''
+    tmp = f'''SELECT * FROM prescription_list'''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(sql)
+        result = cur.fetchall()
+        # cur.execute(tmp)
+        # pprint(cur.fetchall())
+        print(sql)
+        conn.commit()
+        conn.close()
+        return result
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+def patient_search_description(patient_name):
+    sql = f'''SELECT id, pharmacy_name, pharmacy_date, pharmacy_opinion
+              FROM prescription_list
+              WHERE patient_name=\'{patient_name}\'
+    '''
+    tmp = f'''SELECT * FROM prescription_list'''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(sql)
+        result = cur.fetchall()
+        print(sql)
+
+        cur.execute(tmp)
+        print(cur.fetchall())
+        conn.commit()
+        conn.close()
+        print(result)
+        return result
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+def pharmacy_search_description(patient_name, serial_number, date, pharmacy_name):
+    # 예약한 사람들 중 처방을 받은 사람들
+    sql = f'''SELECT id, hospital_date, patient_name, hospital_name, medicine_name, amount_per_onetime, count_per_oneday, how_long_day
+                        ,pharmacy_name, pharmacy_date, pharmacy_opinion
+              FROM prescription_list
+              WHERE hospital_date LIKE \'{date}%\' and id=\'{serial_number}\'
+                    and patient_name IN (SELECT name
+                            FROM reservation_list
+                            WHERE institution_name=\'{pharmacy_name}\')
+    '''
+    sql1 = f'''SELECT * FROM reservation_list WHERE institution_name=\'{pharmacy_name}\' '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        print(sql)
+        cur.execute(sql)
+        result = cur.fetchall()
+        conn.commit()
+        conn.close()
+        return result
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+# 방문 기록 추가
+# def add_visited_record(patient_name, hospital_name, date):
+#     sql = f'''INSERT INTO visited_record(patient_name, hospital_name, date)
+#                       VALUES (\'{patient_name}\', {hospital_name}\', \'{date}\');
+#     '''
+#     try:
+#         conn = pg.connect(connect_string)
+#         cur = conn.cursor() 
+#         cur.execute(sql)
+#         print(sql)
+#         conn.commit()
+#         conn.close()
+#         return 1
+#     except pg.OperationalError as e:
+#         print(e)
+#         return -1
+
+def add_pharmacy_description(id, pharmacy_date, description_contents, pharmacy_name):
+    sql = f'''UPDATE prescription_list 
+              SET pharmacy_date= \'{pharmacy_date}\'
+              WHERE id=\'{id}\'
+    '''
+    sql1 = f'''UPDATE prescription_list 
+              SET pharmacy_opinion= \'{description_contents}\'
+              WHERE id=\'{id}\'
+    '''
+    sql2 = f'''UPDATE prescription_list 
+              SET pharmacy_name= \'{pharmacy_name}\'
+              WHERE id=\'{id}\'
+    '''
+    sql3 = f'''UPDATE prescription_list 
+              SET pharmacy_status = \'{"ok"}\'
+              WHERE id=\'{id}\'
+    '''
+    sql4 = f'''SELECT * 
+               FROM prescription_list
+               WHERE id=\'{id}\'
+    '''
+    try:
+        conn = pg.connect(connect_string)
+        cur = conn.cursor() 
+        cur.execute(sql4)
+        if cur.fetchall == []: return -1
+        cur.execute(sql)
+        print(sql)
+        cur.execute(sql1)
+        cur.execute(sql2)
+        cur.execute(sql3)
+        print(sql1)
+        conn.commit()
+        conn.close()
+        return 1
+    except pg.OperationalError as e:
+        print(e)
+        return -1
+
+def set_pharmacy_status(id, status):
+    sql = f'''UPDATE prescription_list
+              SET pharmacy_status = \'{status}\'
+              WHERE id=\'{id}\'
+    '''
+    sql1 = f'''SELECT * FROM prescription_list '''
+    try:
+        conn = pg.connect(connect_string) 
+        cur = conn.cursor() 
+        print(sql)    
+        cur.execute(sql)
+
+        cur.execute(sql1)
+        print(cur.fetchall())
+        conn.commit()
+        conn.close()
+        return 1
+    except Exception as e:
+        print(e)
+        return []  
 
 if __name__ == ("__main__"):
     lng = 127.0331892    # 파라미터로 받아오거나 한양대 위도,경도로 설정

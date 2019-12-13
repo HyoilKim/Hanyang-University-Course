@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Document</title>
-  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ae01a11268ffab74a2b330854a900671"></script>
-  <!-- <script src="/static/index.js" type="text/javascript"></script> -->
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ae01a11268ffab74a2b330854a900671&libraries=services"></script><!-- <script src="/static/index.js" type="text/javascript"></script> -->
+  
+  <!-- <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=ae01a11268ffab74a2b330854a900671"></script> -->
   <script src="https://code.jquery.com/jquery-3.4.1.js"
         integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
   <script>
@@ -18,24 +19,14 @@
         level: 7
       };
       var map = new kakao.maps.Map(container, options);
+      var markers = [];
 
-      // 마커 표시
-      var marker = new kakao.maps.Marker({ 
-          position: map.getCenter() 
-      }); 
-      marker.setMap()
-
-      // 마우스 드래그로 지도 이동이 완료되었을 때 마지막 파라미터로 넘어온 함수를 호출하도록 이벤트를 등록합니다
-      kakao.maps.event.addListener(map, 'dragend', function() {   
-          var latlng = map.getCenter(); 
-          var marker = new kakao.maps.Marker({ 
-              position: map.getCenter() 
-          }); 
-          marker.setMap(map)
-          marker.setMap(null)    
-          
-      });
-
+      function removeMarker() {
+          for ( var i = 0; i < markers.length; i++ ) {
+              markers[i].setMap(null);
+          }   
+          markers = [];
+      }
       // 현 위치를 중심으로 병원 마커 추가    
       $("#search-hospital").click((e) => {
         console.log("병원검색")
@@ -61,7 +52,7 @@
               
               // 기존 마커 우째 지우노
 
-
+              removeMarker()
               // 마커를 생성 & 마커 정보 기입
               for (var i = 0; i < hosp_list.length; i ++) {
                   latlng = new kakao.maps.LatLng(hosp_list[i][3], hosp_list[i][4])
@@ -96,12 +87,14 @@
                     markerImage = new kakao.maps.MarkerImage(noimage, imageSize);
                   }
                   // 마커 옵션 설정
-                  var marker = new kakao.maps.Marker({
-                      map: map, // 마커를 표시할 지도
-                      position: latlng, // 마커를 표시할 위치
-                      title: contents, // 마커의 타이틀, 마커에 마우스를 올리면 타이틀이 표시됩니다
-                      image: markerImage // 마커 이미지 
+                  marker = new kakao.maps.Marker({
+                      position: latlng, // 마커의 위치
+                      title: contents,
+                      image: markerImage 
                   });
+
+                  marker.setMap(map); // 지도 위에 마커를 표출합니다
+                  markers.push(marker);  // 배열에 생성된 마커를 추가합니다
               }
             }
         })
@@ -110,12 +103,13 @@
       $("#search-pharmacy").click((e) => {
         // 마커 표시
         console.log("약국검색")
+        
         center = map.getCenter()
         let position = {
           "lat": center['Ga'],
           "lng": center['Ha']
         }
-        console.log(position)
+
         $.ajax({
             type: "POST",
             url: "/pharmacy_list",
@@ -130,6 +124,9 @@
               var okimage = "https://i.ibb.co/DbsZvw2/image.png"; 
               var noimage = "https://i.ibb.co/VW2Rg6p/image.png"
 
+              // 기존 마커 삭제
+              removeMarker()
+              
               // 마커를 생성 & 마커 정보 기입
               for (var i = 0; i < pharm_list.length; i ++) {
                   latlng = new kakao.maps.LatLng(pharm_list[i][3], pharm_list[i][4])
@@ -162,18 +159,106 @@
                   } else{
                     markerImage = new kakao.maps.MarkerImage(noimage, imageSize);
                   }
-                  // 마커 옵션 설정
-                  var marker = new kakao.maps.Marker({
-                      map: map, // 마커를 표시할 지도
-                      position: latlng, // 마커를 표시할 위치
-                      title: contents, // 마커의 타이틀, 마커에 마우스를 올리면 타이틀이 표시됩니다
-                      image: markerImage // 마커 이미지 
+                  marker = new kakao.maps.Marker({
+                      position: latlng, // 마커의 위치
+                      title: contents,
+                      image: markerImage 
                   });
+
+                  marker.setMap(map); // 지도 위에 마커를 표출합니다
+                  markers.push(marker);  // 배열에 생성된 마커를 추가합니다
+
               }
             }
         })
       })
 
+      $("#search-glass").click((e) => {
+        console.log("안경점검색")
+        $.ajax({
+            type: "POST",
+            url: "/glasses_list",
+            cache: false,
+            contentType: "application/json",
+            success: res => {
+              glass_list = JSON.parse(res)
+              console.log(glass_list)
+
+              // 기존 마커 삭제
+              removeMarker()
+              // 마커를 생성 & 마커 정보 기입
+              contents = ["아이온안경원", "오렌즈 한양대점", "룩옵티컬 한대점", "룩옵티컬안경원", "렌즈미 한양대점", "룩앤룩", "빠세빠세안경점"]
+              for (let i = 0; i < glass_list.length; i++) {
+                  var imageSize = new kakao.maps.Size(24, 35); 
+                  // console.log(glass_list[i])
+                  // console.log(name)
+                  if (glass_list[i][4] == "naver") {
+                      latlng = new kakao.maps.LatLng(glass_list[i][0], glass_list[i][1])
+                      start = map.getCenter()
+                      distance = computeDistance(start, latlng)
+                      if (distance < 5) {
+                        var image = "https://i.ibb.co/tx3TLKr/image.png"
+                        markerImage = new kakao.maps.MarkerImage(image, imageSize);
+                        marker = new kakao.maps.Marker({
+                            title: contents[i],
+                            position: latlng, // 마커의 위치
+                            image: markerImage 
+                        });
+                        marker.setMap(map); // 지도 위에 마커를 표출합니다
+                        markers.push(marker);  // 배열에 생성된 마커를 추가합니다
+                      }
+                  } 
+                  if (glass_list[i][4] == "nikon") {
+                      var image = 'https://i.ibb.co/1GQwXZ2/image.png'
+                      markerImage = new kakao.maps.MarkerImage(image, imageSize);
+                      // 주소-좌표 변환 객체를 생성합니다
+                      var geocoder = new kakao.maps.services.Geocoder();
+                      // 주소로 좌표를 검색합니다
+                      // 마지막에 들어옴
+
+                      geocoder.addressSearch(glass_list[i][3], function(result, status) {
+                          // 정상적으로 검색이 완료됐으면
+                          if (status === kakao.maps.services.Status.OK) {
+                              var coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+                              start = map.getCenter()
+                              distance = computeDistance(start, coords)
+                              if (distance < 5) {
+                                  var marker = new kakao.maps.Marker({
+                                      title: glass_list[i][2],
+                                      position: coords,
+                                      image: markerImage
+                                  });
+                                  marker.setMap(map)
+                                  markers.push(marker)
+                              } else{
+                                  console.log("5km보다 멀리 있다")
+                              }
+                          }
+                      })
+                  }
+              } 
+            }
+        })
+      })
+      
+      function computeDistance(startCoords, destCoords) {
+          var startLatRads = degreesToRadians(startCoords['Ga']);
+          var startLongRads = degreesToRadians(startCoords['Ha']);
+          var destLatRads = degreesToRadians(destCoords['Ga']);
+          var destLongRads = degreesToRadians(destCoords['Ha']);
+
+          var Radius = 6371; //지구의 반경(km)
+          var distance = Math.acos(Math.sin(startLatRads) * Math.sin(destLatRads) + 
+                          Math.cos(startLatRads) * Math.cos(destLatRads) *
+                          Math.cos(startLongRads - destLongRads)) * Radius;
+          return distance;
+      }
+
+      function degreesToRadians(degrees) {
+          radians = (degrees * Math.PI)/180;
+          return radians;
+      }
+    
       tmp = ""
       local = ""
       domain = ""
@@ -188,7 +273,8 @@
           local = tmp[0]
           domain = tmp[1]
       }
-      $("#privacy-info").click((e) => {
+
+      $("#visited_record").click((e) => {
         e.preventDefault()
         console.log("최근방문 병원목록")
         let email = {
@@ -197,7 +283,7 @@
         }
         $.ajax({
             type: "POST",
-            url: "/patient-privacy-info",
+            url: "/patient_visited_record",
             cache: false,
             data: JSON.stringify(email),
             contentType: "application/json",
@@ -224,7 +310,6 @@
       $("#prefer").submit((e) => {
         e.preventDefault()
         console.log("즐찾")
-        console.log(e.target.hospital_name.value)
         let hospital_info = {
           'local': local,
           'domain': domain,
@@ -237,7 +322,6 @@
             data: JSON.stringify(hospital_info),
             contentType: "application/json",
             success: res => {
-              console.log("@@@@@@@@@@@")
               if(res.length == 0){
                 alert("등록된 병원x")
                 return
@@ -254,58 +338,61 @@
             }
         })
       })
-      
-      // 병원, 약국 예약하기
-      $("reservation").submit((e) => {
-        alert("예약")
+
+      $("#search_description").click((e) => {
+        console.log("처방검색")
         e.preventDefault()
-        console.log("예약")
-        let reservation_info = {
-          'name': e.target.name.value,
-          'phone_number': e.target.phone_number.value,
-          'date': e.target.date.value,
-          'institution': e.target.institution.value
+        let patient_info = {
+            'local': local,
+            'domain': domain
         }
-        alert(reservation_info)
         $.ajax({
             type: "POST",
-            url: "/add_reservation",
+            url: "/patient_search_description",
             cache: false,
-            data: JSON.stringify(reservation_info),
+            data: JSON.stringify(patient_info),
             contentType: "application/json",
             success: res => {
-              console.log(res)
-              if (res == 1) alert("예약성공")
+                if(res == []) alert("처방내역x")
+                search_result = JSON.parse(res)
+                console.log(search_result)
+                let tBodyHtml = ''
+            for(let row of search_result){
+                tBodyHtml += `<tr>
+                    <td>${row[0]}</td>
+                    <td>${row[1]}</td>
+                    <td>${row[2]}</td>
+                    <td>${row[3]}</td>
+                </tr>`
             }
+            $('#description tbody').html(tBodyHtml)
+          }
         })
       })
     })
   </script>
 </head>
 <body>
+  <form method="POST" action="/login">
+      <button type="submit">로그인 화면</button>
+  </form>
   <h1>주변 병원, 약국, 상점 찾기</h1>
   <div>
     <button id="search-hospital">병원 검색</button>
     <button id="search-pharmacy">약국 검색</button>
-    <button id="search-optician">안경원 검색</button>
+    <button id="search-glass">안경원 검색</button>
   </div>
   <div id="map" style="width:500px;height:400px;"></div>
-  <button id="privacy-info">최근 방문한 병원</button>
 
-  <form id="prefer" method="POST">
-    <input type="text" name="hospital_name" placeholder="Hospital Name"/>
-    <button type="submit">자주가는 병원등록 및 조회</button>
-  </form>
-  <form id="reservation" method="POST" action="add_reservation">
-      <input type="text" name="name" placeholder="my Name"/>
-      <input type="text" name="institution_name" placeholder="Hosp or Pharm Name"/>
-      <input type="text" name="date" placeholder="YY-MM-DD"/>
-      <input type="number" name="phone_number" placeholder="Phone Number"/>
-      <button type="submit">예약하기</button>
-  </form>
-
-  <button id="description" type="button">처방전 열람</button>
-  <h3>최근방문한 병원</h3>
+  <form id="reservation" method="POST" action='/add_reservation'>
+    <input type="text" name="patient_name" placeholder="My name"/>
+    <input type="text" name="phone_number" placeholder="phone_number"/>
+    <input type="text" name="institution_name" placeholder="Hosp or Pharm Name"/>
+    <input type="text" name="date" placeholder="YYYY-MM-DD-HH-MM"/>
+    <button type="submit">예약하기</button>
+</form>
+  <h3>[최근 방문한 기관]</h3>
+  <button id="visited_record">최근 방문한 병원, 약국, 안경점</button>
     <table id="recent-visited">
         <thead>
             <tr>
@@ -316,7 +403,12 @@
         <tbody>
         </tbody>
     </table>
-  <h3>자주가는 병원</h3>
+
+  <h3>[자주가는 병원]</h3>
+  <form id="prefer" method="POST">
+    <input type="text" name="hospital_name" placeholder="Hospital Name"/>
+    <button type="submit">자주가는 병원등록</button>
+  </form>
     <table id="favorite">
         <thead>
             <tr>
@@ -326,5 +418,21 @@
         <tbody>
         </tbody>
     </table>
+    <h3>[약국 처방전]</h3>
+    <button id="search_description" methods="POST">처방전 열람</button>  
+
+    <table id="description">
+        <thead>
+            <tr>
+                <th>이름</th>
+                <th>제조기관 이름</th>
+                <th>날짜</th>
+                <th>설명</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    </br></br></br></br>
 </body>
 </html>

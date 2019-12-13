@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>
+            Description
+        </title>
+        <script src="https://code.jquery.com/jquery-3.4.1.js"
+        integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
+        <script>
+        // 예약 조회
+            $(document).ready(function () {
+                tmp = ""
+                local = ""
+                domain = ""
+                var cookies = document.cookie.split(";")
+                console.log(cookies)
+                if (cookies[0].substring(0, 1) == "P"){
+                    tmp = cookies[2].split("@")
+                    local = tmp[0].substring(1, tmp[0].length)
+                    domain = tmp[1]
+                } else{
+                    tmp = cookies[0].split("@")
+                    local = tmp[0]
+                    domain = tmp[1]
+                }
+                
+                $("#description").submit((e) => {
+                    e.preventDefault()
+                    console.log("예약 조회")
+                    let pharmacy_info = {
+                        'local': local,
+                        'domain': domain,
+                        'number': e.target.number.value,
+                        'date': e.target.date.value,
+                        'description_contents': e.target.description_contents.value
+                    }
+                    $.ajax({
+                        type: "POST",
+                        url: "/pharmacy_description_finish",
+                        cache: false,
+                        data: JSON.stringify(pharmacy_info),
+                        contentType: "application/json",
+                        success: res => {
+                            console.log(res)
+                            if(res == "ok") alert("처방완료")
+                            if(res == []) alert("예약x")
+                            
+                        }
+                    })
+                })
+            })
+        </script>
+    </head>
+    <body>
+        <h1>처방전</h1>
+        <form id="description" method="POST">
+            <input type="number" name="number" placeholder="Serial Number"/></br>
+            <input type="text" name="date" placeholder="YYYY-MM-DD-HH-MM"/></br>
+            <input type="text" name="description_contents" placeholder="content"/></br>
+            <button type="submit">처방 완료</button>  
+        </form>
+        <form method="POST" action="/pharmacy_main">
+            <button type="submit">뒤로가기</button>
+        </form>
+    </body>
+</html>

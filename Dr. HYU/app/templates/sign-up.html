@@ -43,10 +43,6 @@
             })
         </script>
         <script> 
-            function check(){
-                // 비밀번호 두개 똑같고
-                // 빈칸 ㄴㄴ
-            }
         </script>
         
     </head>
@@ -55,12 +51,13 @@
         <form id="sign-up-Info"> 
             이메일:<input type="email" name="email" placeholder="email"/></br>
             비밀번호:<input id="password" type="password" name="password" placeholder="password"/></br>
-            <!-- <input id="password2" type="password" name="password" placeholder="one more password"/></br> -->
             이름:<input type="text" name="name" placeholder="name"/></br>
             전화번호:<input type="text" name="phone_number" placeholder="phone_number"/></br>
-            사용자 유형(patient / hospital / optician)<input type="text" name="type" placeholder="type"/></br>
+            사용자 유형(patient / hospital / pharmacy / glasses)<input type="text" name="type" placeholder="type"/></br>
             <button type="submit">가입완료</button>   
-            
+        </form>
+        <form method="POST" action="/login">
+            <button type="submit">돌아가기</button>
         </form>
     </body>
 </html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>
+            처방결과
+        </title>
+    </head>
+    <body>           
+        <form method="POST" action="/patient-main">
+          <button type="submit">돌아가기</button>
+        </form>  
+        <h1>약국 처방전</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>
+                번호
+              </th>
+              <th>
+                날짜
+              </th>
+              <th>
+                제조기관명
+              </th>
+              <th>
+                제조내용
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for info in description %}
+              <tr>
+                <td>
+                  {{ info['id'] }}
+                </td>
+                <td>
+                  {{ info['pharmacy_name'] }}
+                </td>
+                <td>
+                  {{ info['date'] }}
+                </td>
+                <td>
+                  {{ info['pharmacy_opinion'] }}
+                </td>
+              </tr>
+            {% endfor %}            
+          </tbody>
+        </table>
+    </body>
+</html>

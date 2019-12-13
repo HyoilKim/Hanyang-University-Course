@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <title>
-            병원관리자
+            약국 관리자
         </title>
         <script src="https://code.jquery.com/jquery-3.4.1.js"
         integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
@@ -25,24 +25,26 @@
                     domain = tmp[1]
                 }
                 
+                // reservaiton_list : button id
                 $("#reservation_list").submit((e) => {
                     e.preventDefault()
                     console.log("예약 조회")
-                    let hospital_info = {
+                    let pharmacy_info = {
                         'local': local,
-                        'domain': domain
+                        'domain': domain,
                     }
                     $.ajax({
                         type: "POST",
-                        url: "/reservation_list",
+                        url: "/reservation_list",   // 서버의 url
                         cache: false,
-                        data: JSON.stringify(hospital_info),
+                        data: JSON.stringify(pharmacy_info), // json형식으로 변환
                         contentType: "application/json",
                         success: res => {
+                            console.log(res)
                             if(res == []) alert("예약x")
-                            search_result = JSON.parse(res)
+                            search_result = JSON.parse(res) // 서버에서 return한 것을 json으로 변환
                             console.log(search_result)
-                            let tBodyHtml = ''
+                            let tBodyHtml = ''                 
                             for(let row of search_result){
                                 tBodyHtml += `<tr>
                                     <td>${row[0]}</td>
@@ -51,106 +53,52 @@
                                     <td>${row[3]}</td>
                                 </tr>`
                             }
+                            // reservation_table: table id
                             $('#reservation_table tbody').html(tBodyHtml)
                         }
                     })
                 })
 
-                $("#cancel").submit((e) => {
-                    alert("예약취소")
+                $("#set_impossible").submit((e) => {
+                    console.log("처방 불가하기")
                     e.preventDefault()
-                    console.log("예약 취소")
-                    let cancel_info = {
-                        'serial_number': e.target.serial_number.value,
-                        'local': local,
-                        'domain': domain
+                    let serial_number = {
+                        'serial_number': e.target.serial.value,
                     }
                     $.ajax({
                         type: "POST",
-                        url: "/cancel_reservation",
+                        url: "/set_pharmacy_status",
                         cache: false,
-                        data: JSON.stringify(cancel_info),
+                        data: JSON.stringify(serial_number),
                         contentType: "application/json",
                         success: res => {
                             console.log(res)
-                        }
-                    })
-                })
-
-                $("#add_description").submit((e) => {
-                    console.log("처방하기")
-                    e.preventDefault()
-                    let description_info = {
-                        'local': local,
-                        'domain': domain,
-                        'patient_name': e.target.patient_name.value,
-                        'serial_number': e.target.serial_number.value,
-                        'hospital_date': e.target.date.value,
-                        'medicine_name': e.target.medicine_name.value,
-                        'amount_per_onetime': e.target.amount_per_onetime.value,
-                        'count_per_oneday': e.target.count_per_oneday.value,
-                        'how_long_day': e.target.how_long_day.value
-                    }
-                    $.ajax({
-                        type: "POST",
-                        url: "/add_hospital_description",
-                        cache: false,
-                        data: JSON.stringify(description_info),
-                        contentType: "application/json",
-                        success: res => {
-                            console.log(res)
-                            if (res == 1) alert("처방성공")
-                        }
-                    })
-                })
-
-                $("#add_glasses_description").submit((e) => {
-                    console.log("안경처방방하기")
-                    e.preventDefault()
-                    let description_info = {
-                        'local': local,
-                        'domain': domain,
-                        'patient_name': e.target.patient_name.value,
-                        'date': e.target.date.value,
-                        'recommend_date': e.target.recommend_date.value,
-                        'r_vision': e.target.r_vision.value,
-                        'l_vision': e.target.l_vision.value,
-                        'fixed_r_vision': e.target.fixed_r_vision.value,
-                        'fixed_l_vision': e.target.fixed_l_vision.value
-                    }
-                    $.ajax({
-                        type: "POST",
-                        url: "/add_glasses_description",
-                        cache: false,
-                        data: JSON.stringify(description_info),
-                        contentType: "application/json",
-                        success: res => {
-                            console.log(res)
-                            if (res == 1) alert("처방성공")
+                            if (res == "ok") alert("처방 불가 설정")
+                            
                         }
                     })
                 })
 
                 $("#search_description").submit((e) => {
-                    console.log("처방기록")
+                    console.log("처방검색")
                     e.preventDefault()
                     let patient_info = {
                         'local': local,
                         'domain': domain,
-                        'date': e.target.date.value,
+                        'serial_number': e.target.serial_number.value,
                         'patient_name': e.target.patient_name.value,
-                        'serial_number': e.target.serial_number.value
+                        "date": e.target.date.value
                     }
                     $.ajax({
                         type: "POST",
-                        url: "/search_description_record",
+                        url: "/pharmacy_search_description",
                         cache: false,
                         data: JSON.stringify(patient_info),
                         contentType: "application/json",
                         success: res => {
-                            console.log(res)
                             if(res == []) alert("처방내역x")
                             search_result = JSON.parse(res)
+                            console.log(search_result)
                             let tBodyHtml = ''
                             for(let row of search_result){
                                 tBodyHtml += `<tr>
@@ -172,7 +120,7 @@
                     })
                 })
 
-                $("#visited_record").submit((e) => {
+                $("#visited_record").click((e) => {
                     console.log("처방기록")
                     e.preventDefault()
                     let hospital_info = {
@@ -202,18 +150,14 @@
             })
         </script>
     </head>
-    <body>
+    <body> 
         <form method="POST" action="/login">
             <button type="submit">로그인 화면</button>
         </form>
-        <h2>병원관리자 화면</h2>
+        <h2>약국관리자 화면</h2>
         <h3>예약 목록</h3>
         <form id="reservation_list" method="POST">
             <button type="submit">예약자 조회</button>
-        </form>
-        <form id="cancel" method="POST">
-            <input type="number" name="serial_number" placeholder="serial number"/>
-            <button type="submit">예약 취소</button>
         </form>
         <table id="reservation_table">
             <thead>
@@ -228,36 +172,13 @@
             </tbody>
         </table>
         </br>
-        <h3>처방 및 기록 조회</h3>
-        <h4>일반 진료 처방</h4>
-        <form id="add_description" method="POST">
-            <button id="description" type="submit">처방하기</button></br>
-            <input type="text" name="serial_number" placeholder="Serial Number"/>
-            <input type="text" name="patient_name" placeholder="Patient Name"/>
-            <input type="test" name="date" placeholder="YYYY-MM-DD-HH-MM"></br>
-            <input type="text" name="medicine_name" placeholder="Medicine Nmae"/>
-            <input type="text" name="amount_per_onetime" placeholder="Amount per onetime"/>
-            <input type="text" name="count_per_oneday" placeholder="Count per oneday"/>
-            <input type="text" name="how_long_day" placeholder="How long day"/>
-        </form>
-        <h4>안과 처방</h4>
-        <form id="add_glasses_description" method="POST">
-            <button id="description" type="submit">처방하기</button></br>
-            <input type="text" name="patient_name" placeholder="Patient Name"/>
-            <input type="text" name="date" placeholder="YYYY-MM-DD-HH-MM">
-            <input type="text" name="recommend_date" placeholder="YYYY-MM-DD-HH-MM"></br>
-            <input type="text" name="r_vision" placeholder="Right Vision"/>
-            <input type="text" name="l_vision" placeholder="Left Vistion"/>
-            <input type="text" name="fixed_r_vision" placeholder="Fiexed Right Vision"/>
-            <input type="text" name="fixed_l_vision" placeholder="Fiexed Left Vistion"/>
-        </form>
+        <h3>처방전 조회</h3>
         <form id="search_description" method="POST">
             <button type="submit">처방조회</button></br>
-            <input type="number" name="serial_number" placeholder="Serial Number"/>
-            <input type="text" name="patient_name" placeholder="Patient Name"/>
+            <input type="text" name="serial_number" placeholder="Serial Number"/>
+            <input type="patient_name" name="patient_name" placeholder="Patient name"/>
             <input type="text" name="date" placeholder="YYYY-MM-DD-HH-MM"/>
         </form>
-        <h3>처방 기록</h3>
         <table id="description_record">
             <thead>
                 <tr>
@@ -269,19 +190,28 @@
                     <th>[1회 투약량]</th>
                     <th>[1회 투여 횟수]</th>
                     <th>[1회 총 투약일 수]</th>
-                    <th>[제조 기관의 명칭]</th>
+                    <th>[제조 기관의 이름]</th>
                     <th>[제조 연월일]</th>
-                    <th>[처방 내용]</th>
+                    <th>[제조 내용]</th>
                 </tr>
             </thead>
             <tbody>
             </tbody>
         </table>
-        
-        <h3>환자 방문 기록</h3>
-        <form id="visited_record" method="POST">
-            <button type="submit">조회</button>
+        <h3>처방가능 여부 선택</h3>
+        <form method="POST" action="/pharmacy_description">
+            <button id="possible" type="submit">처방 가능</button></br>
         </form>
+        <form id="set_impossible" method="POST">
+            <input type="number" name="serial" placeholder="Serial Number"/>
+            <button type="submit">처방 불가능</button></br>
+        </form>
+
+        </br>
+        <h3>환자 방문 기록</h3>
+        <!-- <form id="visited_record" method="POST"> -->
+        <button id="visited_record" type="submit">조회</button>
+        <!-- </form> -->
         <table id="visited_table">
             <thead>
                 <tr>
