@@ -9,7 +9,7 @@ pg_local = {
     'host': "localhost", # localhost
     'user': "postgres",  # dbuser
     'dbname': "postgres",  # dbapp
-    'password': "gydlf1894*"     
+    'password': "password"     
 }
 db_connector = pg_local
 connect_string = "host={host} user={user} dbname={dbname} password={password}".format(
@@ -79,7 +79,7 @@ def hosp_list_api(lat, lng):
     lat = round(lat, 7)
     lng = round(lng, 7)
     url = "http://apis.data.go.kr/B551182/hospInfoService/getHospBasisList"
-    default_key = "3wlHL6g1M3i2oO2cnR44opHmafh54ifadIuEPG/oNu09j7iaYXKYs87dgFRZDsxfSWwzzJoVgqRhKyLHUIl96A=="
+    default_key = "발급"
     params = {
       'pageNo': 1,  
       'numOfRows': 20,              # 가져오는 데이터 개수
@@ -97,7 +97,7 @@ def hosp_list_api(lat, lng):
 # api로 불러온 자료 table에 저장
 def update_hospInfo_table(lng, lat):
     url = "http://apis.data.go.kr/B551182/hospInfoService/getHospBasisList"
-    default_key = "3wlHL6g1M3i2oO2cnR44opHmafh54ifadIuEPG/oNu09j7iaYXKYs87dgFRZDsxfSWwzzJoVgqRhKyLHUIl96A=="
+    default_key = "발급키"
     params = {
       'pageNo': 1,  
       'numOfRows': 20,              # 가져오는 데이터 개수
@@ -214,7 +214,7 @@ def get_institution_name(local, domain):
 # api로 부터 약국 불러오기
 def pharm_list_api(lat, lng):    
     url = "http://apis.data.go.kr/B551182/pharmacyInfoService/getParmacyBasisList"
-    default_key = "3wlHL6g1M3i2oO2cnR44opHmafh54ifadIuEPG/oNu09j7iaYXKYs87dgFRZDsxfSWwzzJoVgqRhKyLHUIl96A=="
+    default_key = "발급키"
     params = {
         'pageNo': 1,
         'numOfRows': 10,
@@ -230,7 +230,7 @@ def pharm_list_api(lat, lng):
 # 약국 테이블에 api자료로 업데이트
 def update_pharmInfo_table(lng, lat):
     url = "http://apis.data.go.kr/B551182/pharmacyInfoService/getParmacyBasisList"
-    default_key = "3wlHL6g1M3i2oO2cnR44opHmafh54ifadIuEPG/oNu09j7iaYXKYs87dgFRZDsxfSWwzzJoVgqRhKyLHUIl96A=="
+    default_key = "발급키"
     params = {
         'pageNo': 1,
         'numOfRows': 10,

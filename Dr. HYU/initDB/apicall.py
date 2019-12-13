@@ -5,7 +5,7 @@
 
 # def hosp_list(lat=37.5585146, lng=127.0331892):    
 #     url = "http://apis.data.go.kr/B551182/hospInfoService/getHospBasisList"
-#     default_key = "3wlHL6g1M3i2oO2cnR44opHmafh54ifadIuEPG/oNu09j7iaYXKYs87dgFRZDsxfSWwzzJoVgqRhKyLHUIl96A=="
+#     default_key = "인증키"
 #     params = {
 #       'pageNo': 1,
 #       'numOfRows': 10,

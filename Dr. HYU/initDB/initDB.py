@@ -13,7 +13,7 @@ pg_local = {
     'host': "localhost", # localhost
     'user': "postgres",  # dbuser
     'dbname': "postgres",  # dbapp
-    'password': "gydlf1894*"     
+    'password': "password"     
 }
 db_connector = pg_local
 connect_string = "host={host} user={user} dbname={dbname} password={password}".format(

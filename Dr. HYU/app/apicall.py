@@ -12,7 +12,7 @@ def hosp_list(lat, lng):
     print(lat)
     print(lng)
     url = "http://apis.data.go.kr/B551182/hospInfoService/getHospBasisList"
-    default_key = "3wlHL6g1M3i2oO2cnR44opHmafh54ifadIuEPG/oNu09j7iaYXKYs87dgFRZDsxfSWwzzJoVgqRhKyLHUIl96A=="
+    default_key = "인증"
     params = {
       'pageNo': 1,  
       'numOfRows': 20,              # 가져오는 데이터 개수
